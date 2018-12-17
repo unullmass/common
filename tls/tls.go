@@ -6,7 +6,7 @@ import (
 	"errors"
 )
 
-func verifyCertBySha256(certSha256 [32]byte) func([][]byte, [][]*x509.Certificate) error {
+func VerifyCertBySha256(certSha256 [32]byte) func([][]byte, [][]*x509.Certificate) error {
 	return func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
 		if len(rawCerts) <= 0 {
 			return errors.New("kms-client tls: no certificates supplied")
