@@ -25,8 +25,7 @@ func VerifyCertBySha256(certSha256 [32]byte) func([][]byte, [][]*x509.Certificat
 		if err != nil {
 			roots = x509.NewCertPool()
 		}
-		if hostCert.IsCA {
-			// we have a single, self signed certificate
+		if len(rawCerts) == 1 || hostCert.IsCA {
 			roots.AddCert(hostCert)
 		}
 		rest := rawCerts[1:]
