@@ -15,13 +15,15 @@ type Task interface {
 	Validate(c Context) error
 }
 
-// Runner
+// Runner is a task runner for generic Task interfaces. It stores a list of Tasks that will be executed in the
+// order they are found in the list. The runner can also be configured to opt-in to ask for user input from stdin
 type Runner struct {
 	Tasks    []Task
 	AskInput bool
 }
 
 // Context contains contextual setup runner information
+// if askInput is false (default value), the setup task should NOT block and wait for user input
 type Context struct {
 	askInput bool
 }
@@ -65,8 +67,10 @@ func (r *Runner) RunTasks(tasks ...string) error {
 	return nil
 }
 
-// GetConfigInt retrieves an integer variable from the environment
-func (c Context) GetConfigInt(env string, description string) (int, error) {
+// GetenvInt retrieves an integer variable from the environment
+// this function will optionally read input from stdin if it was not defined in the environment,
+// if Context.askInput is set to true
+func (c Context) GetenvInt(env string, description string) (int, error) {
 	fmt.Printf("%s:\n", description)
 	if intStr, ok := os.LookupEnv(env); ok {
 		val, err := strconv.ParseInt(intStr, 10, 32)
@@ -86,8 +90,10 @@ func (c Context) GetConfigInt(env string, description string) (int, error) {
 	return 0, fmt.Errorf("%s is not defined", env)
 }
 
-// GetConfigString retrieves a string variable from the environment
-func (c Context) GetConfigString(env string, description string) (string, error) {
+// GetenvString retrieves a string variable from the environment
+// this function will optionally read input from stdin if it was not defined in the environment,
+// if Context.askInput is set to true
+func (c Context) GetenvString(env string, description string) (string, error) {
 	fmt.Printf("%s:\n", description)
 	if str, ok := os.LookupEnv(env); ok {
 		fmt.Println(str)
@@ -103,8 +109,11 @@ func (c Context) GetConfigString(env string, description string) (string, error)
 	return "", fmt.Errorf("%s is not defined", env)
 }
 
-// GetConfigSecretString retrieves a string variable
-func (c Context) GetConfigSecretString(env string, description string) (string, error) {
+// GetenvSecret retrieves a string variable from the envrionment that is secret
+// this is functionally equivalent to GetenvString, but does not print the read value to stdout
+// this function will optionally read input from stdin if it was not defined in the environment,
+// if Context.askInput is set to true
+func (c Context) GetenvSecret(env string, description string) (string, error) {
 	fmt.Printf("%s:\n", description)
 	if str, ok := os.LookupEnv(env); ok {
 		fmt.Println("****")
