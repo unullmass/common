@@ -8,14 +8,14 @@ before_script:
 
 stages:
   - build
-  # - test
+  - test
 
-# test:
-#   stage: test
-#   tags:
-#     - go
-#   script:
-#     - go test -cover
+test:
+  stage: test
+  tags:
+    - go
+  script:
+    - go test ./... -cover
 
 compile:
   stage: build
