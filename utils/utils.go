@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"os/exec"
@@ -10,13 +9,6 @@ import (
 // ExecuteCommand is used to execute a linux command line command and return the output of the command with an error if it exists.
 func ExecuteCommand(cmd string, args []string) (string, error) {
 	out, err := exec.Command(cmd, args...).Output()
-	return string(out), err
-}
-
-// ExecuteCommandCentext is used to execute a linux command line command with context provided
-// and return the output of the command with an error if it exists.
-func ExecuteCommandCentext(ctx context.Context, cmd string, args []string) (string, error) {
-	out, err := exec.CommandContext(ctx, cmd, args...).Output()
 	return string(out), err
 }
 
