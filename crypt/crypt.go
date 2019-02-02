@@ -1,8 +1,13 @@
 package crypt
 
 import (
+	"crypto"
 	"crypto/rand"
+	"crypto/sha1"
+	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/hex"
+	"fmt"
 )
 
 // SignedData contains the original byte stream that was signed along with
@@ -31,4 +36,32 @@ func GetRandomBytes(length int) ([]byte, error) {
 		return nil, err
 	}
 	return bytes, nil
+}
+
+// GetHash returns a byte array to the hash of the data.
+// alg indicates the hashing algorithm. Currently, the only supported hashing algorithms
+// are SHA1, SHA256, SHA384 and SHA512
+func GetHashData(data []byte, alg crypto.Hash) ([]byte, error) {
+
+	if data == nil {
+		return nil, fmt.Errorf("Error - data pointer is nil")
+	}
+
+	switch alg {
+	case crypto.SHA1:
+		s := sha1.Sum(data)
+		return s[:], nil
+	case crypto.SHA256:
+		s := sha256.Sum256(data)
+		return s[:], nil
+	case crypto.SHA384:
+		//SHA384 is implemented in the sha512 package
+		s := sha512.Sum384(data)
+		return s[:], nil
+	case crypto.SHA512:
+		s := sha512.Sum512(data)
+		return s[:], nil
+	}
+
+	return nil, fmt.Errorf("Error - Unsupported hashing function %d requested. Only SHA1, SHA256, SHA384 and SHA512 supported", alg)
 }
