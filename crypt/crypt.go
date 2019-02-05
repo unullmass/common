@@ -110,7 +110,7 @@ func CreateTestCertAndRSAPrivKey(bits ...int) (*rsa.PrivateKey, string, error) {
 		return nil, "", fmt.Errorf("Error: RSA keylength support is only 1024 or 2048")
 	}
 
-	rsakeypair, err := rsa.GenerateKey(rand.Reader, rsabitlength)
+	rsaKeyPair, err := rsa.GenerateKey(rand.Reader, rsabitlength)
 	if err != nil {
 		return nil, "", err
 	}
@@ -121,21 +121,21 @@ func CreateTestCertAndRSAPrivKey(bits ...int) (*rsa.PrivateKey, string, error) {
 			Organization: []string{certSubjectName},
 		},
 		NotBefore: time.Now(),
-		NotAfter:  time.Now().Add(time.Hour * 24 * 180),
+		NotAfter:  time.Now().Add(time.Hour * 24 * certExpiryDays),
 
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageDataEncipherment,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
 	}
 
-	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &rsakeypair.PublicKey, rsakeypair)
+	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &rsaKeyPair.PublicKey, rsaKeyPair)
 	if err != nil {
 		log.Fatalf("Failed to create certificate: %s", err)
 	}
 
 	out := &bytes.Buffer{}
 	pem.Encode(out, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
-	return rsakeypair, out.String(), nil
+	return rsaKeyPair, out.String(), nil
 
 }
 
