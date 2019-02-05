@@ -97,3 +97,14 @@ func GetValueFromEnvBody(content, keyName string) (value string, err error) {
 	}
 	return "", fmt.Errorf("Could not find Value for %s", keyName)
 }
+
+// ChownR method is used to change the ownership of all the file in a directory
+func ChownR(path string, uid, gid int) error {
+	return filepath.Walk(path, func(name string, info os.FileInfo, err error) error {
+		if err == nil {
+			log.Info("name of the file: ", name)
+			err = os.Chown(name, uid, gid)
+		}
+		return err
+	})
+}
