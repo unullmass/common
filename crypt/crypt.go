@@ -98,19 +98,19 @@ func CreateTestCertAndRSAPrivKey(bits ...int) (*rsa.PrivateKey, string, error) {
 	if len(bits) > 1 {
 		return nil, "", fmt.Errorf("Error: Function only accepts a single parameter - RSA keylength in bits - 1024 or 2048")
 	}
-	var rsabitlength int
+	var rsaBitLength int
 
 	if len(bits) == 0 {
-		rsabitlength = 2048
+		rsaBitLength = 2048
 	} else {
-		rsabitlength = bits[0]
+		rsaBitLength = bits[0]
 	}
 
-	if !(rsabitlength == 2048 || rsabitlength == 1024) {
+	if !(rsaBitLength == 2048 || rsaBitLength == 1024) {
 		return nil, "", fmt.Errorf("Error: RSA keylength support is only 1024 or 2048")
 	}
 
-	rsaKeyPair, err := rsa.GenerateKey(rand.Reader, rsabitlength)
+	rsaKeyPair, err := rsa.GenerateKey(rand.Reader, rsaBitLength)
 	if err != nil {
 		return nil, "", err
 	}
@@ -139,12 +139,12 @@ func CreateTestCertAndRSAPrivKey(bits ...int) (*rsa.PrivateKey, string, error) {
 
 }
 
-func HashAndSignPKCS1v15(data []byte, rsapriv *rsa.PrivateKey, alg crypto.Hash) ([]byte, error) {
+func HashAndSignPKCS1v15(data []byte, rsaPriv *rsa.PrivateKey, alg crypto.Hash) ([]byte, error) {
 
 	hash, err := GetHashData(data, alg)
 	if err != nil {
 		return nil, err
 	}
-	return rsa.SignPKCS1v15(rand.Reader, rsapriv, alg, hash)
+	return rsa.SignPKCS1v15(rand.Reader, rsaPriv, alg, hash)
 
 }
