@@ -138,6 +138,7 @@ func CreateSelfSignedCertAndRSAPrivKeys(bits ...int) (*rsa.PrivateKey, string, e
 
 }
 
+// HashAndSignPKCS1v15 creates a hash and signs it
 func HashAndSignPKCS1v15(data []byte, rsaPriv *rsa.PrivateKey, alg crypto.Hash) ([]byte, error) {
 
 	hash, err := GetHashData(data, alg)
