@@ -58,7 +58,7 @@ func RunCommandWithTimeout(commandLine string, timeout int) (stdout, stderr stri
 
 // MakeFilePathFromEnvVariable creates a filepath given an environment variable and the filename
 // createDir will create a directory if one does not exist
-func MakeFilePathFromEnvVariable(dirEnvVar, filename string, createDir bool) (string, error) {
+func MkDirFilePathFromEnvVariable(dirEnvVar, filename string, createDir bool) (string, error) {
 
 	if filename == "" {
 		return "", fmt.Errorf("Filename is empty")
@@ -70,11 +70,16 @@ func MakeFilePathFromEnvVariable(dirEnvVar, filename string, createDir bool) (st
 	dir = strings.TrimSpace(dir)
 
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		return "", fmt.Errorf("Directory %s does not exist", dir)
+		if createDir {
+			mkDirErr := os.Mkdir(dir, 0600)
+			if mkDirErr != nil {
+				return "", fmt.Errorf("Error while creating the directory %s", dir)
+			}
+		} else {
+			return "", fmt.Errorf("Directory %s does not exist", dir)
+		}
 	}
-
 	return filepath.Join(dir, filename), nil
-
 }
 
 // GetValueFromEnvBody return the value of a key from a config/environment
