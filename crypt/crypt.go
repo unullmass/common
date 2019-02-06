@@ -13,7 +13,6 @@ import (
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
-	"log"
 	"math/big"
 	"time"
 )
@@ -89,12 +88,12 @@ func GetHashData(data []byte, alg crypto.Hash) ([]byte, error) {
 	return nil, fmt.Errorf("Error - Unsupported hashing function %d requested. Only SHA1, SHA256, SHA384 and SHA512 supported", alg)
 }
 
-const certSubjectName = "ISecl Test Cert"
+const certSubjectName = "ISecl Self Sign Cert"
 const certExpiryDays = 180
 
-// CreateTestCertAndRSAPrivKey is a helper function to create a test certificate. This will be primarily used
-// by test function to make a keypair and certificate that can be used for encryption and signing.
-func CreateTestCertAndRSAPrivKey(bits ...int) (*rsa.PrivateKey, string, error) {
+// CreateSelfSignedCertAndRSAPrivKeys creates a test certificate. This will be primarily used
+// by test functions to make a keypair and certificate that can be used for encryption and signing.
+func CreateSelfSignedCertAndRSAPrivKeys(bits ...int) (*rsa.PrivateKey, string, error) {
 	if len(bits) > 1 {
 		return nil, "", fmt.Errorf("Error: Function only accepts a single parameter - RSA keylength in bits - 1024 or 2048")
 	}
@@ -130,7 +129,7 @@ func CreateTestCertAndRSAPrivKey(bits ...int) (*rsa.PrivateKey, string, error) {
 
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &rsaKeyPair.PublicKey, rsaKeyPair)
 	if err != nil {
-		log.Fatalf("Failed to create certificate: %s", err)
+		return nil, "", fmt.Errorf("Failed to create certificate: %s", err)
 	}
 
 	out := &bytes.Buffer{}
