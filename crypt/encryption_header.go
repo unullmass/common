@@ -1,4 +1,4 @@
-package model
+package crypt
 
 // EncryptionHeader is used append to the encrypted file during AES GCM encryption mode
 type EncryptionHeader struct {
