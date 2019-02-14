@@ -18,7 +18,8 @@ func ChownR(path string, uid, gid int) error {
 	})
 }
 
-//IsFileEncrypted method is used to check if the file is encryped and returns a boolean value.
+// IsFileEncrypted method is used to check if the file is encryped and returns a boolean value.
+// TODO : move it a different package where all the ISecL specific functions are added
 func IsFileEncrypted(encFilePath string) (bool, error) {
 
 	var encryptionHeader crypt.EncryptionHeader
