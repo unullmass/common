@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // Task defines a Setup Task. Run() executes the setup task, and Validate() checks whether or not the task succeeded.
@@ -127,4 +129,112 @@ func (c Context) GetenvSecret(env string, description string) (string, error) {
 		return str, nil
 	}
 	return "", fmt.Errorf("%s is not defined", env)
+}
+
+// OverrideValueFromEnvVar takes an environment variable name(key). If this variable is exported
+// ie - available as an environment variable, we will overwrite the value. This is
+func (c Context) OverrideValueFromEnvVar(envVar string, i interface{}, desc string, zeroValueOkay bool) (envValueStr string, envVarExists bool, err error) {
+
+	log.Debugf("Reading from Env var and setting Value : %s", desc)
+	//validate that value that is passed in is a pointer/ reference since we need to set it
+	if reflect.ValueOf(i).Kind() != reflect.Ptr {
+		err = fmt.Errorf("expect a pointer for i - need to pass address of value")
+		return
+	}
+
+	err = nil
+
+	// get value from environment variable
+	envValueStr, envVarExists = os.LookupEnv(envVar)
+
+	// boolean has to be treated seperately as it has different rules. If the environment variable is
+	// set but it does not have a value, it implies true. We will use the zeroValueOkay to determine
+	// whether to interpret it in this manner.
+	// If type is bool and zeroValueOkay is set, we will set it to true
+	if value, ok := i.(*bool); ok {
+		if envVarExists {
+			if envValueStr == "" {
+				if zeroValueOkay {
+					*value = true
+				} else {
+					err = fmt.Errorf("env var %s cannot be empty", envVar)
+					*value = false
+				}
+			} else {
+				var boolResult bool
+				boolResult, err = strconv.ParseBool(envValueStr)
+				if err == nil {
+					*value = boolResult
+				} else {
+					err = fmt.Errorf("env var %s=%s - could not parse boolean value", envVar, envValueStr)
+				}
+
+			}
+		}
+		return
+	}
+
+	// condition where the environment variable is at least defined
+	if envVarExists {
+		switch value := i.(type) {
+		case *int:
+			var intResult int
+			if intResult, err = strconv.Atoi(envValueStr); err == nil {
+				*value = intResult
+			} else {
+				err = fmt.Errorf("env var %s=%s cannot convert to int", envVar, envValueStr)
+			}
+		case *float64:
+			var floatResult float64
+			if floatResult, err = strconv.ParseFloat(envValueStr, 64); err == nil {
+				*value = floatResult
+			} else {
+				err = fmt.Errorf("env var %s=%s cannot convert to float64", envVar, envValueStr)
+			}
+		// Use env variable value if we have ""(empty string ) and it is acceptable
+		case *string:
+			if zeroValueOkay || envValueStr != "" {
+				*value = envValueStr
+			} else {
+				err = fmt.Errorf("env var %s cannot be empty", envVar)
+			}
+		default:
+			message := "unsupported type for reading from environment variable - " +
+				"only int, float64, string and bool currently supported"
+			err = fmt.Errorf(message)
+		}
+		return
+	}
+
+	// TODO. Handle the AskInput cases. We are not using it now.
+	//if c.AskInput {
+
+	//}
+
+	// If the environment variable was not set, we will use the value that was passed in
+	// If zeroValueOkay is not true, then we need to make sure that the underlying values don't have
+	// just the default value. 0 for int, float64 false for bool and "" for string
+	if !zeroValueOkay {
+		switch value := i.(type) {
+		case *int:
+			if *value == 0 {
+				err = fmt.Errorf("env var %s does not exist(or empty) and current value is 0", envVar)
+			}
+		case *float64:
+			if *value == 0 {
+				err = fmt.Errorf("env var %s does not exist(or empty) and current value is 0", envVar)
+			}
+		case *string:
+			if *value == "" {
+				err = fmt.Errorf("env var %s does not exist(or empty) and current value is empty", envVar)
+			}
+		default:
+			message := "unsupported type in function. " +
+				"only int, float64, string and bool supported"
+			err = fmt.Errorf(message)
+		}
+		return
+	}
+
+	return
 }
