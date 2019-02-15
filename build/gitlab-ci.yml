@@ -6,6 +6,10 @@ before_script:
   - echo "        proxy = \"\"" >> ~/.gitconfig
   - cd $CI_PROJECT_DIR
 
+variables:
+  HTTPS_PROXY: http://proxy-us.intel.com:911
+  no_proxy: ".intel.com"
+  
 stages:
   - build
   - test
