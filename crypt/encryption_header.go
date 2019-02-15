@@ -1,7 +1,7 @@
 package crypt
 
 import (
-	"io/ioutil"
+	"os"
 	"strings"
 )
 
@@ -19,14 +19,19 @@ type EncryptionHeader struct {
 func EncryptionHeaderExists(encFilePath string) (bool, error) {
 
 	var encryptionHeader EncryptionHeader
-	//check if file is encrypted
-	encFileContents, err := ioutil.ReadFile(encFilePath)
+	//open the encrypted file
+	encFile, err := os.Open(encFilePath)
 	if err != nil {
 		return false, err
 	}
+	defer encFile.Close()
 
-	magicText := encFileContents[:len(encryptionHeader.MagicText)]
-	if !strings.Contains(string(magicText), EncryptionHeaderMagicText) {
+	magicTextSlice := make([]byte, len(encryptionHeader.MagicText))
+	if _, err := encFile.Read(magicTextSlice); err != nil {
+		return false, err
+	}
+
+	if !strings.Contains(string(magicTextSlice), EncryptionHeaderMagicText) {
 		return false, nil
 	}
 	return true, nil
