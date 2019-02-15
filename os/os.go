@@ -1,11 +1,8 @@
 package os
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
-	"intel/isecl/lib/common/crypt"
 )
 
 // ChownR method is used to change the ownership of all the file in a directory
@@ -16,22 +13,4 @@ func ChownR(path string, uid, gid int) error {
 		}
 		return err
 	})
-}
-
-// IsFileEncrypted method is used to check if the file is encryped and returns a boolean value.
-// TODO : move it a different package where all the ISecL specific functions are added
-func IsFileEncrypted(encFilePath string) (bool, error) {
-
-	var encryptionHeader crypt.EncryptionHeader
-	//check if file is encrypted
-	encFileContents, err := ioutil.ReadFile(encFilePath)
-	if err != nil {
-		return false, err
-	}
-
-	magicText := encFileContents[:len(encryptionHeader.MagicText)]
-	if !strings.Contains(string(magicText), crypt.EncryptionHeaderMagicText) {
-		return false, nil
-	}
-	return true, nil
 }
