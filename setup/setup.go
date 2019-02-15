@@ -30,6 +30,15 @@ type Context struct {
 	askInput bool
 }
 
+// EnvVars data structure is used to hold attributes of an environment variable and the underlying configruation
+// value. You can have an array of this struct to either pass to a function or use it in a loop.
+type EnvVars struct {
+	Name        string
+	ConfigVar   interface{}
+	Description string
+	EmptyOkay   bool
+}
+
 // RunTasks executes the specified set of Tasks against the registered list of tasks. Any tasks registered that arent in the list provided are skipped.
 func (r *Runner) RunTasks(tasks ...string) error {
 	fmt.Println("Running setup ...")
@@ -132,13 +141,14 @@ func (c Context) GetenvSecret(env string, description string) (string, error) {
 }
 
 // OverrideValueFromEnvVar takes an environment variable name(key). If this variable is exported
-// ie - available as an environment variable, we will overwrite the value. This is
+// ie - available as an environment variable, we will overwrite the value.
+// The zeroValue when set to true means that it is okay to have an empty/ default value.
 func (c Context) OverrideValueFromEnvVar(envVar string, i interface{}, desc string, zeroValueOkay bool) (envValueStr string, envVarExists bool, err error) {
 
 	log.Debugf("Reading from Env var and setting Value : %s", desc)
 	//validate that value that is passed in is a pointer/ reference since we need to set it
 	if reflect.ValueOf(i).Kind() != reflect.Ptr {
-		err = fmt.Errorf("expect a pointer for i - need to pass address of value")
+		err = fmt.Errorf("expect a pointer for second input parameter 'i' - need to pass address of value")
 		return
 	}
 
