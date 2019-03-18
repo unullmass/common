@@ -75,3 +75,11 @@ func TestVerifyCertBySha256(t *testing.T) {
 		t.Fail()
 	}
 }
+
+func TestGenerateSelfSignCerts(t *testing.T) {
+
+}
+
+func TestGenRSAKeys(t *testing.T) {
+
+}
