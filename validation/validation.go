@@ -23,10 +23,10 @@ import (
 // var ip_reg, _ = regexp.Compile(`^(?!\s*$).+`)
 
 var (
-	uname_reg        = regexp.MustCompile(`^[A-Za-z]{1}[A-Za-z0-9_]{1,31}$`)
-	hostname_reg     = regexp.MustCompile(`.+`)
-	ip_reg           = regexp.MustCompile(`.+`)
-	idf_reg          = regexp.MustCompile(`^[a-zA-Z_]{1}[a-zA-Z0-9_]{1,127}$`)
+	uname_reg    = regexp.MustCompile(`^[A-Za-z]{1}[A-Za-z0-9_]{1,31}$`)
+	hostname_reg = regexp.MustCompile(`.+`)
+	ip_reg       = regexp.MustCompile(`.+`)
+	idf_reg      = regexp.MustCompile(`^[a-zA-Z_]{1}[a-zA-Z0-9_]{1,127}$`)
 	hardwareuuid_reg = regexp.MustCompile(`^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$`)
 )
 
@@ -120,6 +120,34 @@ func ValidateIdentifier(idf string) error {
 		return nil
 	}
 	return errors.New("Invalid identifier")
+}
+
+// ValidateStrings method is used to validate input strings
+func ValidateStrings(strings []string) error {
+	strRegEx, err := regexp.Compile("(^[a-zA-Z0-9//-]*$)")
+	if err != nil {
+		return err
+	}
+
+	for _, stringValue := range strings {
+		if !strRegEx.MatchString(stringValue) {
+			return fmt.Errorf("Invalid string formatted input")
+		}
+	}
+	return nil
+}
+
+// ValidateKeys method is used to validate input keysin string format
+func ValidatePemEncodedKey(key string) error {
+	strRegEx, err := regexp.Compile("(^[-a-zA-Z0-9//=+ ]*$)")
+	if err != nil {
+		return err
+	}
+
+	if !strRegEx.MatchString(key) {
+		return fmt.Errorf("Invalid key format")
+	}
+	return nil
 }
 
 func ValidateHardwareUUID(uuid string) error {
