@@ -150,6 +150,18 @@ func ValidatePemEncodedKey(key string) error {
 	return nil
 }
 
+// IsValidDigest method checks if the digest value is hexadecimal and 64 characters in length
+func IsValidDigest(value string) bool {
+	r := regexp.MustCompile("^[a-fA-F0-9]{64}$")
+	return r.MatchString(value)
+}
+
+// IsValidUUID method is used to check if the given UUID is of valid format
+func IsValidUUID(uuid string) bool {
+	r := regexp.MustCompile("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$")
+	return r.MatchString(uuid)
+}
+
 func ValidateHardwareUUID(uuid string) error {
 	if hardwareuuid_reg.MatchString(uuid) {
 		return nil
