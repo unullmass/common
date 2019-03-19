@@ -145,21 +145,36 @@ func ValidatePemEncodedKey(key string) error {
 	}
 
 	if !strRegEx.MatchString(key) {
-		return fmt.Errorf("Invalid key format")
+		return errors.New("Invalid key format")
 	}
 	return nil
 }
 
-// IsValidDigest method checks if the digest value is hexadecimal and 64 characters in length
-func IsValidDigest(value string) bool {
-	r := regexp.MustCompile("^[a-fA-F0-9]{64}$")
-	return r.MatchString(value)
+// ValidateBase64String method checks if a string has a valid base64 format
+func ValidateBase64String(value string) error {
+	r := regexp.MustCompile("^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$")
+	if !r.MatchString(value) {
+		return errors.New("Invalid digest format")
+	}
+	return nil
 }
 
-// IsValidUUID method is used to check if the given UUID is of valid format
-func IsValidUUID(uuid string) bool {
+// ValidateHexString method checks if a string has a valid hex format
+func ValidateHexString(value string) error {
+	r := regexp.MustCompile("^[a-fA-F0-9]+$")
+	if !r.MatchString(value) {
+		return errors.New("Invalid hex string format")
+	}
+	return nil
+}
+
+// ValidateUUID method is used to check if the given UUID is of valid format
+func ValidateUUID(uuid string) error {
 	r := regexp.MustCompile("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$")
-	return r.MatchString(uuid)
+	if !r.MatchString(uuid) {
+		return errors.New("Invalid UUID format")
+	}
+	return nil
 }
 
 func ValidateHardwareUUID(uuid string) error {
