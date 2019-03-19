@@ -171,3 +171,63 @@ func TestValidatePemEncodedKey(t *testing.T) {
 	err = ValidatePemEncodedKey(badString3)
 	assert.Error(t, err)
 }
+
+func TestValidateUUID(t *testing.T) {
+
+	goodUUID := "2a16f0bd-aa32-458d-9d7b-fe1a7048c3e2"	
+	err := ValidateUUID(goodUUID)
+	assert.NoError(t, err)
+
+	badUUID1 := "sample-string-with-novalidValue"
+	badUUID2 := "$%^&#$--1234-7890-2345"
+	badUUID3 := "fChs4vXGYJ6hUHCILkLNg1STbF3YC270tVb3pUP9AfA="
+
+	err = ValidateUUID(badUUID1)
+	assert.Error(t, err)
+
+	err = ValidateUUID(badUUID2)
+	assert.Error(t, err)
+	
+	err = ValidateUUID(badUUID3)
+	assert.Error(t, err)
+}
+
+func TestValidateBase64String(t *testing.T) {
+
+	goodUUID := "fChs4vXGYJ6hUHCILkLNg1STbF3YC270tVb3pUP9AfA="	
+	err := ValidateBase64String(goodUUID)
+	assert.NoError(t, err)
+
+	badUUID1 := "sample-string-with-novalidValue"
+	badUUID2 := "$%^&#$--1234-7890-2345"
+	badUUID3 := "2a16f0bd-aa32-458d-9d7b-fe1a7048c3e2"
+
+	err = ValidateBase64String(badUUID1)
+	assert.Error(t, err)
+
+	err = ValidateBase64String(badUUID2)
+	assert.Error(t, err)
+	
+	err = ValidateBase64String(badUUID3)
+	assert.Error(t, err)
+}
+
+func TestValidateHexString(t *testing.T) {
+
+	goodUUID := "f41d0ebcaafb14a3a9a16329bd4c1248db2759576e1e8992c342f6cb52bab333"	
+	err := ValidateHexString(goodUUID)
+	assert.NoError(t, err)
+
+	badUUID1 := "sample-string-with-novalidValue"
+	badUUID2 := "$%^&#$--1234-7890-2345"
+	badUUID3 := "2a16f0bd-aa32-458d-9d7b-fe1a7048c3e2"
+
+	err = ValidateHexString(badUUID1)
+	assert.Error(t, err)
+
+	err = ValidateHexString(badUUID2)
+	assert.Error(t, err)
+	
+	err = ValidateHexString(badUUID3)
+	assert.Error(t, err)
+}
