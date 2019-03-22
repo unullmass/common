@@ -127,15 +127,12 @@ func ValidateIdentifier(idf string) error {
 
 // ValidateStrings method is used to validate input strings
 func ValidateStrings(strings []string) error {
-	fmt.Println("inside the method")
 	strRegEx, err := regexp.Compile("(^[a-zA-Z0-9_///.-]*$)")
 	if err != nil {
-		fmt.Println("Error occured")
 		return err
 	}
 
 	for _, stringValue := range strings {
-		fmt.Println("String value: ", stringValue)
 		if !strRegEx.MatchString(stringValue) {
 			return errors.New("Invalid string formatted input")
 		}
