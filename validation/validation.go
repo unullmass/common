@@ -23,10 +23,10 @@ import (
 // var ip_reg, _ = regexp.Compile(`^(?!\s*$).+`)
 
 var (
-	uname_reg    = regexp.MustCompile(`^[A-Za-z]{1}[A-Za-z0-9_]{1,31}$`)
-	hostname_reg = regexp.MustCompile(`.+`)
-	ip_reg       = regexp.MustCompile(`.+`)
-	idf_reg      = regexp.MustCompile(`^[a-zA-Z_]{1}[a-zA-Z0-9_]{1,127}$`)
+	unameReg    = regexp.MustCompile(`^[A-Za-z]{1}[A-Za-z0-9_]{1,31}$`)
+	hostnameReg = regexp.MustCompile(`.+`)
+	ipReg       = regexp.MustCompile(`.+`)
+	idfReg      = regexp.MustCompile(`^[a-zA-Z_]{1}[a-zA-Z0-9_]{1,127}$`)
 	hardwareuuid_reg = regexp.MustCompile(`^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$`)
 )
 
@@ -53,43 +53,44 @@ func ValidateEnvList(required []string) ([]string, error) {
 // protocol names will be stored in key, and the value is discard
 // path is the specified path the URL must follow
 // Returns an error if any requirement is not met
-func ValidateURL(test_url string, protocols map[string]byte, path string) error {
+func ValidateURL(testURL string, protocols map[string]byte, path string) error {
 
-	url_obj, err := url.Parse(test_url)
+	urlObj, err := url.Parse(testURL)
 	if err != nil {
 		return errors.New("Invalid base URL")
 	}
-	if _, exist := protocols[url_obj.Scheme]; !exist {
+	if _, exist := protocols[urlObj.Scheme]; !exist {
 		return errors.New("Unsupported protocol")
 	}
-	if url_obj.Path != path {
+	if urlObj.Path != path {
 		return errors.New("Invalid path in URL")
 	}
-	if url_obj.RawQuery != "" || url_obj.Fragment != "" {
+	if urlObj.RawQuery != "" || urlObj.Fragment != "" {
 		return errors.New("Unexpected inputs")
 	}
 	return nil
 }
 
-// Validate account information, both user name and pass word
-// Primarily forbidding any quotation marks in the input
-// As well as restricting the length for both of them
+// ValidateAccount information, both username and password primarily forbidding any quotation marks in the input
+// as well as restricting the length for both of them
 func ValidateAccount(uname string, pwd string) error {
 
-	if uname_reg.MatchString(uname) && pwd != "" {
+	if unameReg.MatchString(uname) && pwd != "" {
 		return nil
 	}
 	return errors.New("Invalid input for username or password")
 }
 
+// ValidateHostname method is used to validate the hostname string
 func ValidateHostname(hostname string) error {
 
-	if hostname_reg.MatchString(hostname) || ip_reg.MatchString(hostname) {
+	if hostnameReg.MatchString(hostname) || ipReg.MatchString(hostname) {
 		return nil
 	}
 	return errors.New("Invalid hostname or ip")
 }
 
+// ValidateInteger method is used to validate an input integer value
 func ValidateInteger(number string, cnt int) error {
 
 	mat, err := regexp.Match(fmt.Sprintf("^[0-9]{1,%d}$", cnt), []byte(number))
@@ -102,6 +103,7 @@ func ValidateInteger(number string, cnt int) error {
 	return nil
 }
 
+// ValidateRestrictedString method is used to validate a string based on allowed characters
 func ValidateRestrictedString(str string, allowed string) error {
 
 	mat, err := regexp.Match(fmt.Sprintf("^[%s]{1,128}$", allowed), []byte(str))
@@ -114,9 +116,10 @@ func ValidateRestrictedString(str string, allowed string) error {
 	return nil
 }
 
+// ValidateIdentifier method is used to validate an identifier value
 func ValidateIdentifier(idf string) error {
 
-	if idf_reg.MatchString(idf) {
+	if idfReg.MatchString(idf) {
 		return nil
 	}
 	return errors.New("Invalid identifier")
@@ -124,20 +127,23 @@ func ValidateIdentifier(idf string) error {
 
 // ValidateStrings method is used to validate input strings
 func ValidateStrings(strings []string) error {
-	strRegEx, err := regexp.Compile("(^[a-zA-Z0-9//-]*$)")
+	fmt.Println("inside the method")
+	strRegEx, err := regexp.Compile("(^[a-zA-Z0-9_///.-]*$)")
 	if err != nil {
+		fmt.Println("Error occured")
 		return err
 	}
 
 	for _, stringValue := range strings {
+		fmt.Println("String value: ", stringValue)
 		if !strRegEx.MatchString(stringValue) {
-			return fmt.Errorf("Invalid string formatted input")
+			return errors.New("Invalid string formatted input")
 		}
 	}
 	return nil
 }
 
-// ValidateKeys method is used to validate input keysin string format
+// ValidatePemEncodedKey method is used to validate input keysin string format
 func ValidatePemEncodedKey(key string) error {
 	strRegEx, err := regexp.Compile("(^[-a-zA-Z0-9//=+ ]*$)")
 	if err != nil {

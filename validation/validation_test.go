@@ -20,18 +20,18 @@ func TestValidateEnvList(t *testing.T) {
 	os.Setenv("GOENV_TEST2", "NOT IMPORTATN CONTENT")
 	os.Setenv("GOENV_TEST3", "NOT IMPORTATN CONTENT")
 
-	needed_env := []string{"GOENV_TEST1", "GOENV_TEST2", "GOENV_TEST3"}
-	missing, err := ValidateEnvList(needed_env)
+	neededEnv := []string{"GOENV_TEST1", "GOENV_TEST2", "GOENV_TEST3"}
+	missing, err := ValidateEnvList(neededEnv)
 
 	a.Equal(nil, err)
 	a.Equal(0, len(missing))
 
-	more_than_needed_env := []string{"GOENV_TEST2", "GOENV_TEST3", "GOENV_TEST4", "GOENV_TEST5"}
+	moreThanNeededEnv := []string{"GOENV_TEST2", "GOENV_TEST3", "GOENV_TEST4", "GOENV_TEST5"}
 
-	missing1, err1 := ValidateEnvList(more_than_needed_env)
-	sample_err := errors.New("One or more required environment variables are missing")
+	missing1, err1 := ValidateEnvList(moreThanNeededEnv)
+	sampleErr := errors.New("One or more required environment variables are missing")
 
-	a.Equal(sample_err, err1)
+	a.Equal(sampleErr, err1)
 
 	// should show [GOENV_TEST4:0 GOENV_TEST5:0]
 	// run with with go test -v
@@ -41,39 +41,38 @@ func TestValidateEnvList(t *testing.T) {
 func TestValidateURL(t *testing.T) {
 	a := assert.New(t)
 
-	good_url_1 := "https://google.com"
-	good_url_2 := "http://good.url.with.port:5566"
-	good_url_3 := "https://good.url.https.with.port:5566"
+	goodUrl1 := "https://google.com"
+	goodUrl2 := "http://good.url.with.port:5566"
+	goodUrl3 := "https://good.url.https.with.port:5566"
 
-	good_tests := []string{good_url_1, good_url_2, good_url_3}
+	goodTests := []string{goodUrl1, goodUrl2, goodUrl3}
 
 	protocols := make(map[string]byte)
 	protocols["http"] = 0
 	protocols["https"] = 0
 
-	for _, good_str := range good_tests {
-
-		err := ValidateURL(good_str+"/tds/", protocols, "/tds/")
+	for _, goodStr := range goodTests {
+		err := ValidateURL(goodStr+"/tds/", protocols, "/tds/")
 		a.Equal(nil, err)
 	}
 
-	bad_url_1 := "bad.url.without.protocol/tds/"
-	bad_url_2 := "scheme://bad.url.with.wrong.protocol/tds/"
-	bad_url_3 := "https://bad.url.with.path/tds/path/path/"
-	bad_url_4 := "https://bad.url.with.query/tds/?query=haha"
+	badURL1 := "bad.url.without.protocol/tds/"
+	badURL2 := "scheme://bad.url.with.wrong.protocol/tds/"
+	badURL3 := "https://bad.url.with.path/tds/path/path/"
+	badURL4 := "https://bad.url.with.query/tds/?query=haha"
 
 	// err_1 := errors.New("Invalid base URL")
-	err_2 := errors.New("Unsupported protocol")
-	err_3 := errors.New("Invalid path in URL")
-	err_4 := errors.New("Unexpected inputs")
+	err2 := errors.New("Unsupported protocol")
+	err3 := errors.New("Invalid path in URL")
+	err4 := errors.New("Unexpected inputs")
 
-	bad_tests := []string{bad_url_1, bad_url_2, bad_url_3, bad_url_4}
-	bad_result := []error{err_2, err_2, err_3, err_4}
+	badTests := []string{badURL1, badURL2, badURL3, badURL4}
+	badResult := []error{err2, err2, err3, err4}
 
-	for i, bad_str := range bad_tests {
+	for i, badStr := range badTests {
 
-		err := ValidateURL(bad_str, protocols, "/tds/")
-		a.Equal(bad_result[i], err)
+		err := ValidateURL(badStr, protocols, "/tds/")
+		a.Equal(badResult[i], err)
 	}
 }
 
@@ -131,10 +130,11 @@ func TestValidateStrings(t *testing.T) {
 	goodString1 := "/var/lib/nova/instances/"
 	goodString2 := "abcd1234"
 	goodString3 := "workload-agent"
-	goodString4 := "samplestring"
+	goodString4 := "cirros-x86.qcow2_enc"
 	goodString5 := ""
+	goodString6 := "cirros-enc.qcow2"
 
-	goodStringValueArr := []string{goodString1, goodString2, goodString3, goodString4, goodString5}
+	goodStringValueArr := []string{goodString1, goodString2, goodString3, goodString4, goodString5, goodString6}
 	err := ValidateStrings(goodStringValueArr)
 	assert.NoError(t, err)
 
