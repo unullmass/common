@@ -41,11 +41,11 @@ func TestValidateEnvList(t *testing.T) {
 func TestValidateURL(t *testing.T) {
 	a := assert.New(t)
 
-	goodUrl1 := "https://google.com"
-	goodUrl2 := "http://good.url.with.port:5566"
-	goodUrl3 := "https://good.url.https.with.port:5566"
+	goodURL1 := "https://google.com"
+	goodURL2 := "http://good.url.with.port:5566"
+	goodURL3 := "https://good.url.https.with.port:5566"
 
-	goodTests := []string{goodUrl1, goodUrl2, goodUrl3}
+	goodTests := []string{goodURL1, goodURL2, goodURL3}
 
 	protocols := make(map[string]byte)
 	protocols["http"] = 0
@@ -55,6 +55,10 @@ func TestValidateURL(t *testing.T) {
 		err := ValidateURL(goodStr+"/tds/", protocols, "/tds/")
 		a.Equal(nil, err)
 	}
+
+	goodURL4 := "https://10.1.68.68:443/v1/keys/438c7486-9827-4072-89c5-93ae4538114e/transfer"
+	err := ValidateURL(goodURL4, protocols, "/v1/keys/438c7486-9827-4072-89c5-93ae4538114e/transfer")
+	a.Equal(nil, err)
 
 	badURL1 := "bad.url.without.protocol/tds/"
 	badURL2 := "scheme://bad.url.with.wrong.protocol/tds/"
