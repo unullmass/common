@@ -7,7 +7,7 @@ package tls
 import (
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha256"
+	"crypto/sha512"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-func TestVerifyCertBySha256(t *testing.T) {
+func TestVerifyCertBySha384(t *testing.T) {
 	ca := &x509.Certificate{
 		SerialNumber: big.NewInt(1653),
 		Subject: pkix.Name{
@@ -51,7 +51,7 @@ func TestVerifyCertBySha256(t *testing.T) {
 	pem.Encode(keyFile, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(priv)})
 	keyFile.Close()
 
-	certDigest := sha256.Sum256(cert)
+	certDigest := sha512.Sum384(cert)
 
 	http.HandleFunc("/foo", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("bar"))
@@ -60,7 +60,7 @@ func TestVerifyCertBySha256(t *testing.T) {
 
 	tlsConfig := tls.Config{
 		InsecureSkipVerify:    true,
-		VerifyPeerCertificate: VerifyCertBySha256(certDigest),
+		VerifyPeerCertificate: VerifyCertBySha384(certDigest),
 	}
 	transport := http.Transport{
 		TLSClientConfig: &tlsConfig,

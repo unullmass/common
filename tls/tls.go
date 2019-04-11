@@ -5,19 +5,19 @@
 package tls
 
 import (
-	"crypto/sha256"
+	"crypto/sha512"
 	"crypto/x509"
 	"errors"
 )
 
-func VerifyCertBySha256(certSha256 [32]byte) func([][]byte, [][]*x509.Certificate) error {
+func VerifyCertBySha384(certSha384 [48]byte) func([][]byte, [][]*x509.Certificate) error {
 	return func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
 		if len(rawCerts) <= 0 {
 			return errors.New("kms-client tls: no certificates supplied")
 		}
 		hostRawCert := rawCerts[0]
-		fingerprint := sha256.Sum256(hostRawCert)
-		if fingerprint != certSha256 {
+		fingerprint := sha512.Sum384(hostRawCert)
+		if fingerprint != certSha384 {
 			return errors.New("kms-client tls: fingerprint does not match")
 		}
 		hostCert, err := x509.ParseCertificate(hostRawCert)
