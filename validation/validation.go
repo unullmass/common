@@ -23,10 +23,11 @@ import (
 // var ip_reg, _ = regexp.Compile(`^(?!\s*$).+`)
 
 var (
-	uname_reg    = regexp.MustCompile(`^[A-Za-z]{1}[A-Za-z0-9_]{1,31}$`)
-	hostname_reg = regexp.MustCompile(`.+`)
-	ip_reg       = regexp.MustCompile(`.+`)
-	idf_reg      = regexp.MustCompile(`^[a-zA-Z_]{1}[a-zA-Z0-9_]{1,127}$`)
+	uname_reg        = regexp.MustCompile(`^[A-Za-z]{1}[A-Za-z0-9_]{1,31}$`)
+	hostname_reg     = regexp.MustCompile(`.+`)
+	ip_reg           = regexp.MustCompile(`.+`)
+	idf_reg          = regexp.MustCompile(`^[a-zA-Z_]{1}[a-zA-Z0-9_]{1,127}$`)
+	hardwareuuid_reg = regexp.MustCompile(`^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$`)
 )
 
 // ValidateEnvList can check if all environment variables in input slice exist
@@ -119,4 +120,11 @@ func ValidateIdentifier(idf string) error {
 		return nil
 	}
 	return errors.New("Invalid identifier")
+}
+
+func ValidateHardwareUUID(uuid string) error {
+	if hardwareuuid_reg.MatchString(uuid) {
+		return nil
+	}
+	return errors.New("Invalid hardware uuid")
 }
