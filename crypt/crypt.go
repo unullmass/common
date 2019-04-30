@@ -12,12 +12,15 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/sha512"
+	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
+	"io/ioutil"
 	"math/big"
+	"net/url"
 	"time"
 )
 
@@ -150,5 +153,76 @@ func HashAndSignPKCS1v15(data []byte, rsaPriv *rsa.PrivateKey, alg crypto.Hash) 
 		return nil, err
 	}
 	return rsa.SignPKCS1v15(rand.Reader, rsaPriv, alg, hash)
+
+}
+
+// GetCertHexSha384 returns SHA384 of a certificate that is stored on disk given a filepath
+func GetCertHexSha384(filePath string) (string, error) {
+	certPEM, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return "", fmt.Errorf("cannot read from cert file %s : ", filePath)
+	}
+
+	block, _ := pem.Decode(certPEM)
+	if block == nil {
+		return "", fmt.Errorf("failed to parse certificate PEM")
+	}
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse certificate: " + err.Error())
+	}
+	hash, _ := GetHashData(cert.Raw, crypto.SHA384)
+
+	return hex.EncodeToString(hash), nil
+}
+
+// RetrieveValidatedPeerCert retrieves the cert of a remote server and matches it against a supplied hash.
+// Optionally, if permitted via trustFirstCert accepts the certificate presented by the remote server
+func RetrieveValidatedPeerCert(baseUrl string, trustFirstCert bool, trustedThumbprint string, hashAlg crypto.Hash) ( *x509.Certificate, error) {
+
+	if !trustFirstCert && trustedThumbprint == "" {
+		return nil, fmt.Errorf("trustedThumbprint not provided and trusting retrieved cert not allowed")
+	}
+
+	if baseUrl == "" {
+		return nil, fmt.Errorf("url to connect cannot be empty")
+	}
+	url_obj, err := url.Parse(baseUrl)
+	if err != nil {
+		return nil, fmt.Errorf("could not parse url '%s', error: %s", baseUrl, err)
+	}
+
+	var dialString string
+	if url_obj.Port() != "" {
+		dialString = ":" + url_obj.Port()
+	}
+	dialString = url_obj.Hostname() + dialString
+
+	conn, err := tls.Dial("tcp", dialString, &tls.Config{InsecureSkipVerify:true})
+	if err != nil {
+		return nil, fmt.Errorf("could not tcp connect to %s, error: %s: ", dialString, err )
+	}
+
+	err = conn.Handshake()
+	if err != nil {
+		return nil, fmt.Errorf("tls handshake with %s failed, error : %s", dialString, err)
+	}
+
+	peerCert := conn.ConnectionState().PeerCertificates[0]
+
+	if trustFirstCert {
+		return peerCert, nil
+	}
+
+	hash, err := GetHashData(peerCert.Raw, hashAlg)
+	if err != nil {
+		return nil, err
+	}
+
+	if hex.EncodeToString(hash) != trustedThumbprint {
+		return nil, fmt.Errorf("retrieved server certificate hash does not match supplied hash: %s calculated hash: %s", hash, trustedThumbprint)
+	}
+
+	return peerCert, nil
 
 }
