@@ -5,6 +5,7 @@
 package os
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 )
