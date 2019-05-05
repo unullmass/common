@@ -19,20 +19,24 @@ func ChownR(path string, uid, gid int) error {
 	})
 }
 
-// IsFileEncrypted method is used to check if the file is encryped and returns a boolean value.
-// TODO : move it a different package where all the ISecL specific functions are added
-func IsFileEncrypted(encFilePath string) (bool, error) {
+// Copy the src file to dst. Any existing file will be overwritten and will not
+// copy file attributes.
+func Copy(src, dst string) error {
+    in, err := os.Open(src)
+    if err != nil {
+        return err
+    }
+    defer in.Close()
 
-	var encryptionHeader crypt.EncryptionHeader
-	//check if file is encrypted
-	encFileContents, err := ioutil.ReadFile(encFilePath)
-	if err != nil {
-		return false, err
-	}
+    out, err := os.Create(dst)
+    if err != nil {
+        return err
+    }
+    defer out.Close()
 
-	magicText := encFileContents[:len(encryptionHeader.MagicText)]
-	if !strings.Contains(string(magicText), crypt.EncryptionHeaderMagicText) {
-		return false, nil
-	}
-	return true, nil
+    _, err = io.Copy(out, in)
+    if err != nil {
+        return err
+    }
+    return out.Close()
 }
