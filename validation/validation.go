@@ -12,22 +12,18 @@ import (
 	"regexp"
 )
 
-// var uname_reg, _ = regexp.Compile(`^[A-Za-z]{1}[A-Za-z0-9_]{1,31}$`)
-
-// var pwd_reg, _ = regexp.Compile("^[A-Za-z0-9#?!@$%^&*-._]{1,}$")
-// var hostname_reg, _ = regexp.Compile("^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])$")
-// var ip_reg, _ = regexp.Compile("^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$")
-// var idf_reg, _ = regexp.Compile(`^[a-zA-Z_]{1}[a-zA-Z0-9_]{1,127}$`)
-
-// var hostname_reg, _ = regexp.Compile(`^(?!\s*$).+`)
-// var ip_reg, _ = regexp.Compile(`^(?!\s*$).+`)
-
 var (
 	unameReg    = regexp.MustCompile(`^[A-Za-z]{1}[A-Za-z0-9_]{1,31}$`)
 	hostnameReg = regexp.MustCompile(`.+`)
 	ipReg       = regexp.MustCompile(`.+`)
 	idfReg      = regexp.MustCompile(`^[a-zA-Z_]{1}[a-zA-Z0-9_]{1,127}$`)
-	hardwareuuid_reg = regexp.MustCompile(`^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$`)
+	hardwareuuidReg = regexp.MustCompile(`^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$`)
+	base64StringReg = regexp.MustCompile("^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$")
+	xmlStringReg = regexp.MustCompile("(^[a-zA-Z0-9-_///.'\":=<>\n/+ ]*$)")
+	stringReg = regexp.MustCompile("(^[a-zA-Z0-9_///.-]*$)")
+	hexStringReg = regexp.MustCompile("^[a-fA-F0-9]+$")
+	pemEncodedKeyReg = regexp.MustCompile("(^[-a-zA-Z0-9//=+ ]*$)")
+	uuidReg = regexp.MustCompile("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$")
 )
 
 // ValidateEnvList can check if all environment variables in input slice exist
@@ -127,13 +123,8 @@ func ValidateIdentifier(idf string) error {
 
 // ValidateStrings method is used to validate input strings
 func ValidateStrings(strings []string) error {
-	strRegEx, err := regexp.Compile("(^[a-zA-Z0-9_///.-]*$)")
-	if err != nil {
-		return err
-	}
-
 	for _, stringValue := range strings {
-		if !strRegEx.MatchString(stringValue) {
+		if !stringReg.MatchString(stringValue) {
 			return errors.New("Invalid string formatted input")
 		}
 	}
@@ -142,12 +133,7 @@ func ValidateStrings(strings []string) error {
 
 // ValidatePemEncodedKey method is used to validate input keysin string format
 func ValidatePemEncodedKey(key string) error {
-	strRegEx, err := regexp.Compile("(^[-a-zA-Z0-9//=+ ]*$)")
-	if err != nil {
-		return err
-	}
-
-	if !strRegEx.MatchString(key) {
+	if !pemEncodedKeyReg.MatchString(key) {
 		return errors.New("Invalid key format")
 	}
 	return nil
@@ -155,33 +141,39 @@ func ValidatePemEncodedKey(key string) error {
 
 // ValidateBase64String method checks if a string has a valid base64 format
 func ValidateBase64String(value string) error {
-	r := regexp.MustCompile("^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$")
-	if !r.MatchString(value) {
+	if !base64StringReg.MatchString(value) {
 		return errors.New("Invalid digest format")
+	}
+	return nil
+}
+
+// ValidateXMLString method checks if a string has a valid base64 format
+func ValidateXMLString(value string) error {
+	if !xmlStringReg.MatchString(value) {
+		return errors.New("Invalid XML format")
 	}
 	return nil
 }
 
 // ValidateHexString method checks if a string has a valid hex format
 func ValidateHexString(value string) error {
-	r := regexp.MustCompile("^[a-fA-F0-9]+$")
-	if !r.MatchString(value) {
+	if !hexStringReg.MatchString(value) {
 		return errors.New("Invalid hex string format")
 	}
 	return nil
 }
 
-// ValidateUUID method is used to check if the given UUID is of valid format
-func ValidateUUID(uuid string) error {
-	r := regexp.MustCompile("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$")
-	if !r.MatchString(uuid) {
+// ValidateUUIDv4  method is used to check if the given UUID is of valid v4 format
+func ValidateUUIDv4(uuid string) error {
+	if !uuidReg.MatchString(uuid) {
 		return errors.New("Invalid UUID format")
 	}
 	return nil
 }
 
+// ValidateHardwareUUID method is used to check if the hardware UUID format is valid
 func ValidateHardwareUUID(uuid string) error {
-	if hardwareuuid_reg.MatchString(uuid) {
+	if hardwareuuidReg.MatchString(uuid) {
 		return nil
 	}
 	return errors.New("Invalid hardware uuid")

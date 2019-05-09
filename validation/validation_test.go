@@ -176,23 +176,23 @@ func TestValidatePemEncodedKey(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestValidateUUID(t *testing.T) {
+func TestValidateUUIDv4(t *testing.T) {
 
 	goodUUID := "2a16f0bd-aa32-458d-9d7b-fe1a7048c3e2"	
-	err := ValidateUUID(goodUUID)
+	err := ValidateUUIDv4(goodUUID)
 	assert.NoError(t, err)
 
 	badUUID1 := "sample-string-with-novalidValue"
 	badUUID2 := "$%^&#$--1234-7890-2345"
 	badUUID3 := "fChs4vXGYJ6hUHCILkLNg1STbF3YC270tVb3pUP9AfA="
 
-	err = ValidateUUID(badUUID1)
+	err = ValidateUUIDv4(badUUID1)
 	assert.Error(t, err)
 
-	err = ValidateUUID(badUUID2)
+	err = ValidateUUIDv4(badUUID2)
 	assert.Error(t, err)
 	
-	err = ValidateUUID(badUUID3)
+	err = ValidateUUIDv4(badUUID3)
 	assert.Error(t, err)
 }
 
@@ -233,5 +233,21 @@ func TestValidateHexString(t *testing.T) {
 	assert.Error(t, err)
 	
 	err = ValidateHexString(badUUID3)
+	assert.Error(t, err)
+}
+
+func TestValidateXMLString(t *testing.T) {
+
+	goodXML := "<domain type='kvm'><name>instance-00000035</name><uuid>6f62d266-7dfd-4eaa-b31c-fc27a68565a9</uuid>"+
+               "<metadata><nova:instance xmlns:nova=\"http://openstack.org/xmlns/libvirt/nova/1.0\"><nova:package version=\"16.0.1\"/>" +
+                "<nova:name>jy</nova:name><nova:creationTime>2018-06-14 18:28:00</nova:creationTime><nova:flavor name=\"small\">"+
+				"<nova:memory>4000</nova:memory><nova:disk>1</nova:disk><nova:swap>0</nova:swap><nova:ephemeral>1</nova:ephemeral>" +
+				"<nova:vcpus>1</nova:vcpus></nova:flavor></metadata></domain>"
+
+	err := ValidateXMLString(goodXML)
+	assert.NoError(t, err)
+
+	badXML := "$%^&#$--1234-7890-2345"
+	err = ValidateXMLString(badXML)
 	assert.Error(t, err)
 }
