@@ -6,7 +6,6 @@ package validation
 
 import (
 	"errors"
-	"fmt"
 	"net/url"
 	"os"
 	"regexp"
@@ -14,7 +13,7 @@ import (
 
 var (
 	unameReg         = regexp.MustCompile(`^[A-Za-z]{1}[A-Za-z0-9_]{1,31}$`)
-	hostnameReg      = regexp.MustCompile("^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])$")
+	hostnameReg      = regexp.MustCompile("^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]{0,61}[A-Za-z0-9])$")
 	ipReg            = regexp.MustCompile("^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$")
 	idfReg           = regexp.MustCompile(`^[a-zA-Z_]{1}[a-zA-Z0-9_]{1,127}$`)
 	hardwareuuidReg  = regexp.MustCompile(`^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$`)
@@ -80,36 +79,11 @@ func ValidateAccount(uname string, pwd string) error {
 // ValidateHostname method is used to validate the hostname string
 func ValidateHostname(hostname string) error {
 
-	if hostnameReg.MatchString(hostname) || ipReg.MatchString(hostname) {
+	if len(hostname) < 254 &&
+		(hostnameReg.MatchString(hostname) || ipReg.MatchString(hostname)) {
 		return nil
 	}
 	return errors.New("Invalid hostname or ip")
-}
-
-// ValidateInteger method is used to validate an input integer value
-func ValidateInteger(number string, cnt int) error {
-
-	mat, err := regexp.Match(fmt.Sprintf("^[0-9]{1,%d}$", cnt), []byte(number))
-	if err != nil {
-		return err
-	}
-	if !mat {
-		return errors.New("Invalid numeric string")
-	}
-	return nil
-}
-
-// ValidateRestrictedString method is used to validate a string based on allowed characters
-func ValidateRestrictedString(str string, allowed string) error {
-
-	mat, err := regexp.Match(fmt.Sprintf("^[%s]{1,128}$", allowed), []byte(str))
-	if err != nil {
-		return err
-	}
-	if !mat {
-		return errors.New("Invalid input string")
-	}
-	return nil
 }
 
 // ValidateIdentifier method is used to validate an identifier value
