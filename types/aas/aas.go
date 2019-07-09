@@ -23,12 +23,17 @@ type RoleIDs struct {
 	RoleUUIDs []string `json:"role_ids"`
 }
 
-type UserRoleCreate struct {
-	ID      string `json:"user_id"`
-	RoleIds RoleIDs
+type UserCreate struct {
+	Name     string `json:"username"`
+	Password string `json:"password"`
 }
 
 type UserCreateResponse struct {
 	ID   string `json:"user_id"`
 	Name string `json:"username"`
+}
+
+type UserRoleCreate struct {
+	ID      string `json:"user_id"`
+	RoleIds RoleIDs
 }
