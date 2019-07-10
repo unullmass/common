@@ -23,6 +23,10 @@ type RoleIDs struct {
 	RoleUUIDs []string `json:"role_ids"`
 }
 
+type RoleSlice struct {
+	Roles []RoleInfo `json:"roles"`
+}
+
 type UserCreate struct {
 	Name     string `json:"username"`
 	Password string `json:"password"`
@@ -36,4 +40,9 @@ type UserCreateResponse struct {
 type UserRoleCreate struct {
 	ID      string `json:"user_id"`
 	RoleIds RoleIDs
+}
+
+type UserCred struct {
+	UserName string `json:"username"`
+	Password string `json:"password"`
 }
