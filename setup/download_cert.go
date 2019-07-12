@@ -155,11 +155,12 @@
 
 			fi, err := os.Stat(tc.CertFile)
 			if err != nil || fi.Mode().IsRegular() {
-				err = ioutil.WriteFile(tc.CertFile, cert, 0660)
+				err = ioutil.WriteFile(tc.CertFile, cert, 0644)
 				if err != nil {
 					fmt.Println("Could not store Certificate")
 					return fmt.Errorf("Certificate setup: %v", err)
-				}
+				}				
+				os.Chmod(tc.CertFile, 0644)
 			} else if fi.Mode().IsDir() {
 				err = crypt.SavePemCertWithShortSha1FileName(cert, tc.CertFile)
 				if err != nil {

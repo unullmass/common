@@ -288,9 +288,9 @@ func SavePemCertWithShortSha1FileName(certPem []byte, dir string) error {
 	if err != nil {
 		return fmt.Errorf("could not open private key file for writing: %v", err)
 	}
-	// private key should not be world readable
-	os.Chmod(certFilePath, 0640)
 	defer certOut.Close()
+	
+	os.Chmod(certFilePath, 0640)
 	if err := pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: cert}); err != nil {
 		return fmt.Errorf("could not pem encode the private key: %v", err)
 	}
