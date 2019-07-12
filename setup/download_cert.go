@@ -87,17 +87,34 @@
  
  func (tc Download_Cert) Run(c Context) error {
 		 fmt.Fprintln(tc.ConsoleWriter, "Running Certificate download setup...")
-		 fs := flag.NewFlagSet("cert", flag.ContinueOnError)
+		 fs := flag.NewFlagSet("download_cert", flag.ContinueOnError)
 		 force := fs.Bool("force", false, "force recreation, will overwrite any existing certificate")
+		 certType := fs.String("cert", tc.CertType, "type of the certificate")
 		 
 		 err := fs.Parse(tc.Flags)
 		 if err != nil {				 
 				 return errors.New("Certificate setup: Unable to parse flags") 
 		 }
+		 fmt.Println("Certificate Type :" + *certType)
 		 cmsBaseUrl, err := c.GetenvString("CMS_BASE_URL", "CMS base URL in https://{{cms}}:{{cms_port}}/cms/v1/")
 	     if err != nil || cmsBaseUrl == "" {			     
 				 return errors.New("Certificate setup: CMS_BASE_URL not found in environment for Download Certificate") 
 		 }
+
+		keyFile, err := c.GetenvString("KEY_PATH", "Path of file where key needs to be stored")
+		if err == nil {
+			tc.KeyFile = keyFile
+		}
+
+		certPath, err := c.GetenvString("CERT_PATH", "Path of file/directory where certificate needs to be stored")
+		if err == nil {
+			tc.CertFile = certPath
+		}
+
+		commonName, err := c.GetenvString("COMMON_NAME", "Common Name of certificate")
+		if err == nil {
+			tc.CommonName = commonName
+		}
 
 		defaultHostname, err := c.GetenvString("SAN_LIST", "Comma separated list of hostnames to add to Certificate")
 		if err != nil {
@@ -135,10 +152,20 @@
 			if err != nil {
 				return fmt.Errorf("Certificate setup: %v", err)
 			} 
-			err = ioutil.WriteFile(tc.CertFile, cert, 0660)
-			if err != nil {
-				fmt.Println("Could not store Certificate")
-				return fmt.Errorf("Certificate setup: %v", err)
+
+			fi, err := os.Stat(tc.CertFile)
+			if err != nil || fi.Mode().IsRegular() {
+				err = ioutil.WriteFile(tc.CertFile, cert, 0660)
+				if err != nil {
+					fmt.Println("Could not store Certificate")
+					return fmt.Errorf("Certificate setup: %v", err)
+				}
+			} else if fi.Mode().IsDir() {
+				err = crypt.SavePemCertWithShortSha1FileName(cert, tc.CertFile)
+				if err != nil {
+					fmt.Println("Could not store Certificate")
+					return fmt.Errorf("Certificate setup: %v", err)
+				}
 			}
 		 } else {
 				 fmt.Println("Certificate already downloaded, skipping")
@@ -148,11 +175,8 @@
  
  func (tc Download_Cert) Validate(c Context) error {	 
 	fmt.Fprintln(tc.ConsoleWriter, "Validating Certificate download setup...")	
-	 _, err := os.Stat(tc.CertFile)
-	 if os.IsNotExist(err) {
-		 return errors.New("CertFile is not configured")
-	 }
-	 _, err = os.Stat(tc.KeyFile)
+
+	 _, err := os.Stat(tc.KeyFile)
 	 if os.IsNotExist(err) {
 		 return errors.New("KeyFile is not configured")
 	 }
