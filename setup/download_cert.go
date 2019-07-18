@@ -46,7 +46,7 @@
 		   fmt.Println("Configured CMS URL is malformed: ", err)
 		   return nil, nil, fmt.Errorf("Certificate setup: %v", err)
    }
-   certificates, _ := url.Parse("certificates")
+   certificates, _ := url.Parse("certificates?certType=" + tc.CertType)
    endpoint := url.ResolveReference(certificates)
    csrPemBytes := pem.EncodeToMemory(&pem.Block{Type: "BEGIN CERTIFICATE REQUEST", Bytes: csrData})
    req, err := http.NewRequest("POST", endpoint.String(),  bytes.NewBuffer(csrPemBytes))
