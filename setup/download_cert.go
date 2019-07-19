@@ -31,12 +31,12 @@
 		 SanList            string
 		 CertType           string
 		 BearerToken        string
-	     ConsoleWriter      io.Writer
+	   ConsoleWriter      io.Writer
  }
 
- func createCertificate(tc Download_Cert, cmsBaseUrl string, commonName string, hosts string, bearerToken string) (key []byte, cert []byte, err error) {
+ func GetCertificateFromCMS(certType string, keyAlg string, keyLen int, cmsBaseUrl string, commonName string, hosts string, bearerToken string) (key []byte, cert []byte, err error) {
 	 //TODO: use CertType for TLS or Signing cert	
-	csrData, key, err := crypt.CreateKeyPairAndCertificateRequest(commonName, hosts, tc.KeyAlgorithm, tc.KeyAlgorithmLength)
+	csrData, key, err := crypt.CreateKeyPairAndCertificateRequest(commonName, hosts, keyAlg, keyLen)
 	if err != nil {
 	   return nil, nil, fmt.Errorf("Certificate setup: %v", err)
 	}	
@@ -46,7 +46,7 @@
 		   fmt.Println("Configured CMS URL is malformed: ", err)
 		   return nil, nil, fmt.Errorf("Certificate setup: %v", err)
    }
-   certificates, _ := url.Parse("certificates?certType=" + tc.CertType)
+   certificates, _ := url.Parse("certificates?certType=" + certType)
    endpoint := url.ResolveReference(certificates)
    csrPemBytes := pem.EncodeToMemory(&pem.Block{Type: "BEGIN CERTIFICATE REQUEST", Bytes: csrData})
    req, err := http.NewRequest("POST", endpoint.String(),  bytes.NewBuffer(csrPemBytes))
@@ -144,7 +144,7 @@
 					return valid_err
 				}
 			}
-			key, cert, err := createCertificate(tc, cmsBaseUrl, tc.CommonName, *host, bearerToken)
+			key, cert, err := GetCertificateFromCMS(tc.CertType, tc.KeyAlgorithm, tc.KeyAlgorithmLength, cmsBaseUrl, tc.CommonName, *host, bearerToken)
 			if err != nil {
 				return fmt.Errorf("Certificate setup: %v", err)
 			}
