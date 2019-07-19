@@ -22,6 +22,7 @@ var (
 	stringReg        = regexp.MustCompile("(^[a-zA-Z0-9_///.-]*$)")
 	hexStringReg     = regexp.MustCompile("^[a-fA-F0-9]+$")
 	pemEncodedKeyReg = regexp.MustCompile("(^[-a-zA-Z0-9//=+ ]*$)")
+	dateReg			 = regexp.MustCompile("(0?[1-9]|[12][0-9]|3[01])-(0?[1-9]|1[012])-((19|20)\\d\\d)")
 	uuidReg          = regexp.MustCompile("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$")
 )
 
@@ -152,3 +153,13 @@ func ValidateHardwareUUID(uuid string) error {
 	}
 	return errors.New("Invalid hardware uuid")
 }
+
+// ValidateDate method is used to check if the date format is valid
+func ValidateDate(date string) error {
+	if dateReg.MatchString(date) {
+		return nil
+	}
+	return errors.New("Invalid date format")
+}
+
+
