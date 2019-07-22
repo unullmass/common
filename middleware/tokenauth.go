@@ -54,18 +54,6 @@ func NewTokenAuth(signingCertsDir, trustedCAsDir string, fnGetJwtCerts RetriveJw
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		// lets start by making sure jwt token verifier is initalized
-
-		// there is a case when the jwtVerifier is not loaded with the right certificates. 
-		// In this case, we need to reattempt. So lets run this in a loop
-		if jwtVerifier == nil  {
-			if err := initJwtVerifier(signingCertsDir, trustedCAsDir); err != nil {
-				log.WithError(err).Error("not able to initialize jwt verifier.")
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-		}
-
 		// pull up the bearer token.
 
 		splitAuthHeader := strings.Split(r.Header.Get("Authorization"), "Bearer ")
@@ -73,6 +61,24 @@ func NewTokenAuth(signingCertsDir, trustedCAsDir string, fnGetJwtCerts RetriveJw
 			log.Error("no bearer token provided for authorization")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
+		}
+	
+		// lets start by making sure jwt token verifier is initalized
+
+		// there is a case when the jwtVerifier is not loaded with the right certificates. 
+		// In this case, we need to reattempt. So lets run this in a loop
+		if jwtVerifier == nil  {
+			if err := initJwtVerifier(signingCertsDir, trustedCAsDir); err != nil {
+		// initJwtVerifier would throw error if there is no certificate at all, 
+		// if so fnGetJwtCerts call back function will be invoked to retreive certificate and initialize jwtverifier
+				if err = fnGetJwtCerts(); err == nil{
+					if err = initJwtVerifier(signingCertsDir, trustedCAsDir); err != nil{
+						log.WithError(err).Error("not able to initialize jwt verifier.")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+				}				
+			}
 		}
 
 		// TODO: Not really liking the 4 level of nested if below.. this works.. but would really
