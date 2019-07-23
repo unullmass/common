@@ -65,18 +65,17 @@ func TestValidateURL(t *testing.T) {
 	badURL3 := "https://bad.url.with.path/tds/path/path/"
 	badURL4 := "https://bad.url.with.query/tds/?query=haha"
 
-	// err_1 := errors.New("Invalid base URL")
+	err1 := errors.New("Invalid base URL")
 	err2 := errors.New("Unsupported protocol")
 	err3 := errors.New("Invalid path in URL")
 	err4 := errors.New("Unexpected inputs")
 
 	badTests := []string{badURL1, badURL2, badURL3, badURL4}
-	badResult := []error{err2, err2, err3, err4}
+	badResult := []error{err1, err2, err3, err4}
 
-	for i, badStr := range badTests {
-
+	for _, badStr := range badTests {
 		err := ValidateURL(badStr, protocols, "/tds/")
-		a.Equal(badResult[i], err)
+		a.Contains(badResult, err)
 	}
 }
 
