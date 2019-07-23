@@ -51,7 +51,7 @@ func ValidateEnvList(required []string) ([]string, error) {
 // Returns an error if any requirement is not met
 func ValidateURL(testURL string, protocols map[string]byte, path string) error {
 
-	urlObj, err := url.Parse(testURL)
+	urlObj, err := url.ParseRequestURI(testURL)
 	if err != nil {
 		return errors.New("Invalid base URL")
 	}
