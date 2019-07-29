@@ -9,6 +9,7 @@
 		 "flag"
 		 "io"
 		 "os"
+		 "crypto/x509"
 		 "bytes"
 		 "strings"
 		 "errors"
@@ -19,6 +20,7 @@
 		 "encoding/pem"
 		 "intel/isecl/lib/common/validation"
 		 "intel/isecl/lib/common/crypt"
+		 cos "intel/isecl/lib/common/os"
  )
  
  type Download_Cert struct {
@@ -30,11 +32,12 @@
 		 CommonName         string
 		 SanList            string
 		 CertType           string
+		 CaCertsDir         string
 		 BearerToken        string
-	   ConsoleWriter      io.Writer
+	     ConsoleWriter      io.Writer
  }
 
- func GetCertificateFromCMS(certType string, keyAlg string, keyLen int, cmsBaseUrl string, commonName string, hosts string, bearerToken string) (key []byte, cert []byte, err error) {
+ func GetCertificateFromCMS(certType string, keyAlg string, keyLen int, cmsBaseUrl string, commonName string, hosts string, caCertsDir string, bearerToken string) (key []byte, cert []byte, err error) {
 	 //TODO: use CertType for TLS or Signing cert	
 	csrData, key, err := crypt.CreateKeyPairAndCertificateRequest(commonName, hosts, keyAlg, keyLen)
 	if err != nil {
@@ -57,12 +60,28 @@
    req.Header.Set("Accept", "application/x-pem-file")        
    req.Header.Set("Content-Type", "application/x-pem-file")      
    req.Header.Set("Authorization", "Bearer " + bearerToken)  
-   // TODO: Add root CA
+   
+   rootCaCertPems, err := cos.GetDirFileContents(caCertsDir, "*.pem" )
+	if err != nil {
+		return nil, nil, err
+	}
+
+    rootCAs, _ := x509.SystemCertPool()
+    if rootCAs == nil {
+		rootCAs = x509.NewCertPool()
+    }
+	for _, rootCACert := range rootCaCertPems{
+		if ok := rootCAs.AppendCertsFromPEM(rootCACert); !ok {
+	                return nil, nil, err
+	        }
+	}
+
    client := &http.Client{
 		   Transport: &http.Transport{
-				   TLSClientConfig: &tls.Config{
-						   InsecureSkipVerify: true,
-				   },
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: false,
+					RootCAs: rootCAs,
+				},
 		   },
    }
    resp, err := client.Do(req)
@@ -144,7 +163,7 @@
 					return valid_err
 				}
 			}
-			key, cert, err := GetCertificateFromCMS(tc.CertType, tc.KeyAlgorithm, tc.KeyAlgorithmLength, cmsBaseUrl, tc.CommonName, *host, bearerToken)
+			key, cert, err := GetCertificateFromCMS(tc.CertType, tc.KeyAlgorithm, tc.KeyAlgorithmLength, cmsBaseUrl, tc.CommonName, *host, tc.CaCertsDir, bearerToken)
 			if err != nil {
 				return fmt.Errorf("Certificate setup: %v", err)
 			}
