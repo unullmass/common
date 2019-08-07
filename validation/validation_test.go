@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
-
+	"io/ioutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -237,11 +237,8 @@ func TestValidateHexString(t *testing.T) {
 
 func TestValidateXMLString(t *testing.T) {
 
-	goodXML := "<domain type='kvm'><name>instance-00000035</name><uuid>6f62d266-7dfd-4eaa-b31c-fc27a68565a9</uuid>"+
-               "<metadata><nova:instance xmlns:nova=\"http://openstack.org/xmlns/libvirt/nova/1.0\"><nova:package version=\"16.0.1\"/>" +
-                "<nova:name>jy</nova:name><nova:creationTime>2018-06-14 18:28:00</nova:creationTime><nova:flavor name=\"small\">"+
-				"<nova:memory>4000</nova:memory><nova:disk>1</nova:disk><nova:swap>0</nova:swap><nova:ephemeral>1</nova:ephemeral>" +
-				"<nova:vcpus>1</nova:vcpus></nova:flavor></metadata></domain>"
+	xmlFile, _ := ioutil.ReadFile("../test/domXML.xml")
+	goodXML := string(xmlFile)
 
 	err := ValidateXMLString(goodXML)
 	assert.NoError(t, err)
