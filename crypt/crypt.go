@@ -102,18 +102,18 @@ const certExpiryDays = 180
 // by test functions to make a keypair and certificate that can be used for encryption and signing.
 func CreateSelfSignedCertAndRSAPrivKeys(bits ...int) (*rsa.PrivateKey, string, error) {
 	if len(bits) > 1 {
-		return nil, "", fmt.Errorf("Error: Function only accepts a single parameter - RSA keylength in bits - 1024 or 2048")
+		return nil, "", fmt.Errorf("Error: Function only accepts a single parameter - RSA keylength in bits - 1024, 2048 or 3072")
 	}
 	var rsaBitLength int
 
 	if len(bits) == 0 {
-		rsaBitLength = 2048
+		rsaBitLength = 3072
 	} else {
 		rsaBitLength = bits[0]
 	}
 
-	if !(rsaBitLength == 2048 || rsaBitLength == 1024) {
-		return nil, "", fmt.Errorf("Error: RSA keylength support is only 1024 or 2048")
+	if !(rsaBitLength == 3072 || rsaBitLength == 2048 || rsaBitLength == 1024) {
+		return nil, "", fmt.Errorf("Error: RSA keylength support is only 1024, 2048 or 3072")
 	}
 
 	rsaKeyPair, err := rsa.GenerateKey(rand.Reader, rsaBitLength)
