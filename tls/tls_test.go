@@ -39,7 +39,7 @@ func createCert() ([]byte, *rsa.PrivateKey, error) {
 		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
 		BasicConstraintsValid: true,
 	}
-	priv, _ := rsa.GenerateKey(rand.Reader, 2048)
+	priv, _ := rsa.GenerateKey(rand.Reader, 3072)
 	pub := &priv.PublicKey
 	cert, _ := x509.CreateCertificate(rand.Reader, ca, ca, pub, priv)
 
