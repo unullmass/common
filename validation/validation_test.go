@@ -237,10 +237,16 @@ func TestValidateHexString(t *testing.T) {
 
 func TestValidateXMLString(t *testing.T) {
 
-	xmlFile, _ := ioutil.ReadFile("../test/domXML.xml")
-	goodXML := string(xmlFile)
+	xmlFile1, _ := ioutil.ReadFile("../test/domXML.xml")
+	goodXML1 := string(xmlFile1)
 
-	err := ValidateXMLString(goodXML)
+	err := ValidateXMLString(goodXML1)
+	assert.NoError(t, err)
+
+	xmlFile2, _ := ioutil.ReadFile("../test/samlCert.xml")
+	goodXML2 := string(xmlFile2)
+
+	err = ValidateXMLString(goodXML2)
 	assert.NoError(t, err)
 
 	badXML := "$%^&#$--1234-7890-2345"
