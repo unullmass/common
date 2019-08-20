@@ -93,21 +93,19 @@ func NewTokenAuth(signingCertsDir, trustedCAsDir string, fnGetJwtCerts RetriveJw
 			// lets check if the failure is because we could not find a public key used to sign the token
 			// We will be able to check this only if there is a kid (key id) field in the JWT header.
 			// check the details of the jwt library implmentation to see how this is done
-			if _, ok := err.(*jwtauth.MatchingCertNotFoundError); ok && fnGetJwtCerts != nil {
+			if _, ok := err.(*jwtauth.MatchingCertNotFoundError); ok{
 				
 				// let us try to load certs from list of URLs with JWT signing certificates that we trust
-				if err = fnGetJwtCerts(); err == nil {
+				fnGetJwtCerts()
 
-					// hopefully, we now have the necesary certificate files in the appropriate directory
-					// re-initialize the verifier to pick up any new certificate.
-					if err = initJwtVerifier(signingCertsDir, trustedCAsDir); err != nil {
-						log.WithError(err).Error("attempt to reinitialize jwt verifier failed")
-						w.WriteHeader(http.StatusInternalServerError)
-						return
-					}
-					_, err = jwtVerifier.ValidateTokenAndGetClaims(strings.TrimSpace(splitAuthHeader[1]), &claims)
-
+				// hopefully, we now have the necesary certificate files in the appropriate directory
+				// re-initialize the verifier to pick up any new certificate.
+				if err = initJwtVerifier(signingCertsDir, trustedCAsDir); err != nil {
+					log.WithError(err).Error("attempt to reinitialize jwt verifier failed")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
 				}
+				_, err = jwtVerifier.ValidateTokenAndGetClaims(strings.TrimSpace(splitAuthHeader[1]), &claims)
 				
 			}
 		}
