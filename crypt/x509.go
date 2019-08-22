@@ -78,7 +78,7 @@ func GetSignatureAlgorithm(pubKey crypto.PublicKey) (x509.SignatureAlgorithm, er
 
 // CreateKeyPairAndCertificateRequest taken in parameters for certificate request and return der bytes for the CSR
 // and a PKCS8 private key. We are using PKCS8 since we could can have a single package for ecdsa or rsa keys.
-func CreateKeyPairAndCertificateRequest(subject, hostList, keyType string, keyLength int) (certReq []byte, pkcs8Der []byte, err error) {
+func CreateKeyPairAndCertificateRequest(subject pkix.Name, hostList, keyType string, keyLength int) (certReq []byte, pkcs8Der []byte, err error) {
 
 	//first let us look at type of keypair that we are generating
 	privKey, pubKey, err := GenerateKeyPair(keyType, keyLength)
@@ -88,7 +88,11 @@ func CreateKeyPairAndCertificateRequest(subject, hostList, keyType string, keyLe
 
 	template := x509.CertificateRequest{
 		Subject: pkix.Name{
-			CommonName: subject,
+			CommonName:   subject.CommonName,
+			Organization: subject.Organization,
+			Country:      subject.Country,
+			Province:     subject.Province,
+			Locality:     subject.Locality,
 		},
 	}
 	template.SignatureAlgorithm, err = GetSignatureAlgorithm(pubKey)
@@ -117,7 +121,7 @@ func CreateKeyPairAndCertificateRequest(subject, hostList, keyType string, keyLe
 	return certReq, pkcs8Der, nil
 }
 
-// CreateKeyPairAndCertificateRequest taken in parameters for certificate request and return der bytes for the CSR
+// CreateKeyPairAndCertificate takes in parameters for certificate and return der bytes for the certificate
 // and a PKCS8 private key. We are using PKCS8 since we could can have a single package for ecdsa or rsa keys.
 func CreateKeyPairAndCertificate(subject, hostList, keyType string, keyLength int) ([]byte, []byte, error) {
 
