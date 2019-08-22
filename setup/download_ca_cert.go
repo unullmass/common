@@ -19,11 +19,12 @@ import (
 
 type Download_Ca_Cert struct {
         Flags           []string
-        CaCertDirPath   string        
+        CmsBaseURL      string
+        CaCertDirPath   string
 	ConsoleWriter   io.Writer
 }
 
-func DownloadRootCaCertificate(cmsBaseUrl string, dirPath string) (err error) {        
+func DownloadRootCaCertificate(cmsBaseUrl string, dirPath string) (err error) {
         url, err := url.Parse(cmsBaseUrl)
         if err != nil {
                 fmt.Println("Configured CMS URL is malformed: ", err)
@@ -36,7 +37,7 @@ func DownloadRootCaCertificate(cmsBaseUrl string, dirPath string) (err error) {
                 fmt.Println("Failed to instantiate http request to CMS")
                 return fmt.Errorf("CA certificate setup: %v", err)
         }
-        req.Header.Set("Accept", "application/x-pem-file")        
+        req.Header.Set("Accept", "application/x-pem-file")
         client := &http.Client{
                 Transport: &http.Transport{
                         TLSClientConfig: &tls.Config{
@@ -60,7 +61,7 @@ func DownloadRootCaCertificate(cmsBaseUrl string, dirPath string) (err error) {
         if err != nil {
                 fmt.Println("Failed to read CMS response body")
                 return fmt.Errorf("CA certificate setup: %v", err)
-        }        
+        }
         if tlsResp != nil {
                 err = crypt.SavePemCertWithShortSha1FileName(tlsResp, dirPath)
                 if err != nil {
@@ -70,39 +71,44 @@ func DownloadRootCaCertificate(cmsBaseUrl string, dirPath string) (err error) {
         } else {
                 fmt.Println("Invalid response from Download CA Certificate")
                 return fmt.Errorf("Invalid response from Download CA Certificate")
-        }        
-        return nil        
+        }
+        return nil
 }
 
 func (cc Download_Ca_Cert) Run(c Context) error {
+        var cmsBaseUrl string
         fmt.Fprintln(cc.ConsoleWriter, "Running CA certificate download setup...")
         fs := flag.NewFlagSet("ca", flag.ContinueOnError)
         force := fs.Bool("force", false, "force recreation, will overwrite any existing certificate")
-        
+
         err := fs.Parse(cc.Flags)
         if err != nil {
-                fmt.Println("CA certificate setup: Unable to parse flags") 
-                return fmt.Errorf("CA certificate setup: Unable to parse flags") 
+                fmt.Println("CA certificate setup: Unable to parse flags")
+                return fmt.Errorf("CA certificate setup: Unable to parse flags")
         }
-        cmsBaseUrl, err := c.GetenvString("CMS_BASE_URL", "CMS base URL in https://{{cms}}:{{cms_port}}/cms/v1/")
-	 if err != nil || cmsBaseUrl == "" {
-                fmt.Println("CMS_BASE_URL not found in environment for Download CA Certificate") 
-                return fmt.Errorf("CMS_BASE_URL not found in environment for Download CA Certificate") 
-         }
+        if cc.CmsBaseURL != "" {
+            cmsBaseUrl = cc.CmsBaseURL
+        } else {
+            cmsBaseUrl, err = c.GetenvString("CMS_BASE_URL", "CMS base URL in https://{{cms}}:{{cms_port}}/cms/v1/")
+            if err != nil || cmsBaseUrl == "" {
+                fmt.Println("CMS_BASE_URL not found in environment for Download CA Certificate")
+                return fmt.Errorf("CMS_BASE_URL not found in environment for Download CA Certificate")
+            }
+        }
 
         if *force || cc.Validate(c) != nil {
                 err = DownloadRootCaCertificate(cmsBaseUrl, cc.CaCertDirPath)
                 if err != nil {
-                        fmt.Println("Failed to Download CA Certificate") 
+                        fmt.Println("Failed to Download CA Certificate")
                         return err
                  }
         } else {
                 fmt.Println("CA certificate already downloaded, skipping")
-        }           
-         return nil  
+        }
+         return nil
 }
 
-func (cc Download_Ca_Cert) Validate(c Context) error {	 
+func (cc Download_Ca_Cert) Validate(c Context) error {
         fmt.Fprintln(cc.ConsoleWriter, "Validating CA certificate download setup...")
         ok, err := IsDirEmpty(cc.CaCertDirPath)
          if err != nil {
@@ -120,7 +126,7 @@ func (cc Download_Ca_Cert) Validate(c Context) error {
             return false, err
         }
         defer f.Close()
-    
+
         _, err = f.Readdirnames(1)
         if err == io.EOF {
             return true, nil
