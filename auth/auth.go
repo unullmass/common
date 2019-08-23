@@ -10,9 +10,9 @@ import (
 )
 
 func ValidatePermissionAndGetRoleContext(privileges []types.RoleInfo, reqRoles []types.RoleInfo,
-	retNilCtxForEmptyCtx bool) (*map[string]*types.RoleInfo, bool) {
+	retNilCtxForEmptyCtx bool) (*map[string]types.RoleInfo, bool) {
 
-	ctx := make(map[string]*types.RoleInfo)
+	ctx := make(map[string]types.RoleInfo)
 	foundMatchingRole := false
 	for _, role := range privileges {
 		for _, reqRole := range reqRoles {
@@ -21,7 +21,7 @@ func ValidatePermissionAndGetRoleContext(privileges []types.RoleInfo, reqRoles [
 					return nil, true
 				}
 				if strings.TrimSpace(role.Context) != "" {
-					ctx[strings.TrimSpace(role.Context)] = &role
+					ctx[strings.TrimSpace(role.Context)] = role
 				}
 				foundMatchingRole = true
 			}
