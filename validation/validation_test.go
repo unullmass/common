@@ -256,17 +256,21 @@ func TestValidateXMLString(t *testing.T) {
 
 func TestValidateDate(t *testing.T) {
 
-	goodDate1 := "31-07-2010"
+	goodDate1 := "2006-12-13T15:04:05"
 
 	err := ValidateDate(goodDate1)
 	assert.NoError(t, err)
 
 	badDate1 := "1/13/2010"
 	badDate2 := "29-02-200a"
+	badDate3 := "2006-12-13"
 
 	err = ValidateDate(badDate1)
 	assert.Error(t, err)
 
 	err = ValidateDate(badDate2)
+	assert.Error(t, err)
+
+	err = ValidateDate(badDate3)
 	assert.Error(t, err)
 }
