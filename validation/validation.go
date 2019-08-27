@@ -13,6 +13,7 @@ import (
 
 var (
 	unameReg         = regexp.MustCompile(`^[A-Za-z]{1}[A-Za-z0-9_]{1,31}$`)
+	userorEmailReg   = regexp.MustCompile("^[a-zA-Z0-9.-_]+@?[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 	hostnameReg      = regexp.MustCompile("^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]{0,61}[A-Za-z0-9])$")
 	ipReg            = regexp.MustCompile("^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$")
 	idfReg           = regexp.MustCompile(`^[a-zA-Z_]{1}[a-zA-Z0-9_]{1,127}$`)
@@ -22,7 +23,7 @@ var (
 	stringReg        = regexp.MustCompile("(^[a-zA-Z0-9_\\/.-]*$)")
 	hexStringReg     = regexp.MustCompile("^[a-fA-F0-9]+$")
 	pemEncodedKeyReg = regexp.MustCompile("(^[-a-zA-Z0-9//=+ ]*$)")
-	dateReg			 = regexp.MustCompile("(0?[1-9]|[12][0-9]|3[01])-(0?[1-9]|1[012])-((19|20)\\d\\d)")
+	dateReg          = regexp.MustCompile("(0?[1-9]|[12][0-9]|3[01])-(0?[1-9]|1[012])-((19|20)\\d\\d)")
 	uuidReg          = regexp.MustCompile("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$")
 )
 
@@ -75,6 +76,25 @@ func ValidateAccount(uname string, pwd string) error {
 		return nil
 	}
 	return errors.New("Invalid input for username or password")
+}
+
+// ValidateUserNameString validate user primarily forbidding any quotation marks in the input
+// as well as restricting the length. The username can be in the form of an email address
+func ValidateUserNameString(uname string) error {
+
+	if userorEmailReg.MatchString(uname) {
+		return nil
+	}
+	return errors.New("Invalid input for username")
+}
+
+// ValidatePasswordString validate password. For not we are only checking if this is empty
+func ValidatePasswordString(pwd string) error {
+
+	if pwd != "" && len(pwd) < 256 {
+		return nil
+	}
+	return errors.New("Invalid input for password")
 }
 
 // ValidateHostname method is used to validate the hostname string
@@ -161,5 +181,3 @@ func ValidateDate(date string) error {
 	}
 	return errors.New("Invalid date format")
 }
-
-
