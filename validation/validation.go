@@ -82,7 +82,7 @@ func ValidateAccount(uname string, pwd string) error {
 // as well as restricting the length. The username can be in the form of an email address
 func ValidateUserNameString(uname string) error {
 
-	if userorEmailReg.MatchString(uname) {
+	if len(uname) < 256 && userorEmailReg.MatchString(uname) {
 		return nil
 	}
 	return errors.New("Invalid input for username")
