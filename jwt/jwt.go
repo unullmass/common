@@ -1,5 +1,6 @@
-/* Copyright (C) 2019 Intel Corporation
-* SPDX-License-Identifier: BSD-3-Clause
+/*
+ * Copyright (C) 2019 Intel Corporation
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 package jwtauth
 
@@ -17,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	jwt "github.com/dgrijalva/jwt-go"
 )
 
 const defaultTokenValidity time.Duration = 24 * time.Hour
