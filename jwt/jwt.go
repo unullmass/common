@@ -298,10 +298,13 @@ func NewVerifier(signingCertPems interface{}, rootCAPems [][]byte) (Verifier, er
 		// we might just want to take the certificate from the pem here itself
 		// then retrieve the public key, hash and also do the verification right
 		// here. Otherwise we are parsing the certificate multiple times.
-		cert, err := crypt.GetCertFromPem(certPem)
+		var cert *x509.Certificate
+		var err error
+		cert, verifyRootCAOpts.Intermediates, err = crypt.GetCertAndChainFromPem(certPem)
 		if err != nil {
 			continue
 		}
+
 		// if certificate is not self signed, then we have to validate the cert
 		// this implies that we are allowing self signed certificate.
 		if !(cert.IsCA && cert.BasicConstraintsValid) {
