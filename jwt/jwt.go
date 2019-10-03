@@ -31,6 +31,22 @@ func (e MatchingCertNotFoundError) Error() string {
 	return fmt.Sprintf("certificate with matching public key not found. kid (key id) : %s", e.KeyId)
 }
 
+type VerifierExpiredError struct{
+	expiry time.Time
+}
+
+func (e VerifierExpiredError) Error() string {
+	return fmt.Sprintf("verifier expired at %v", e.expiry)
+}
+
+type NoValidCertFoundError struct{
+
+}
+
+func (e NoValidCertFoundError) Error() string {
+	return fmt.Sprintf("there are no valid certificates when initializing jwt verifier")
+}
+
 type JwtFactory struct {
 	privKey       crypto.PrivateKey
 	issuer        string
@@ -78,10 +94,16 @@ func (t *Token) GetHeader() *map[string]interface{} {
 	return &t.jwtToken.Header
 }
 
-type verifierPrivate struct {
-	pubKeyMap  map[string]crypto.PublicKey
-	publicName string
+type verifierKey struct{
+	pubKey crypto.PublicKey
+	expTime time.Time
 }
+
+type verifierPrivate struct {
+	expiration time.Time
+	pubKeyMap  map[string] verifierKey
+}
+
 type Verifier interface {
 	ValidateTokenAndGetClaims(tokenString string, customClaims interface{}) (*Token, error)
 }
@@ -200,6 +222,11 @@ func (f *JwtFactory) Create(clms interface{}, subject string, validity time.Dura
 //TODO - implement this to parse the claims
 func (v *verifierPrivate) ValidateTokenAndGetClaims(tokenString string, customClaims interface{}) (*Token, error) {
 
+	// let us check if the verifier is already expired. If it is just return verifier expired error
+	// The caller has to re-initialize the verifier.
+	if time.Now().After(v.expiration){
+		return nil, &VerifierExpiredError{v.expiration}
+	}
 	token := Token{}
 	token.standardClaims = &jwt.StandardClaims{}
 	parsedToken, err := jwt.ParseWithClaims(tokenString, token.standardClaims, func(token *jwt.Token) (interface{}, error) {
@@ -209,25 +236,22 @@ func (v *verifierPrivate) ValidateTokenAndGetClaims(tokenString string, customCl
 		// now we have more than 1 certificates. We need to use the key id to pull up the right public key
 		keyIDValue, keyIDExists := token.Header["kid"]
 		if keyIDExists {
-			var matchPubKey crypto.PublicKey
-			var matchPubKeyExists, ok bool
-			var keyIDString string
 
-			if keyIDString, ok = keyIDValue.(string); ok {
-				if matchPubKey, matchPubKeyExists = v.pubKeyMap[keyIDString]; matchPubKeyExists {
-					return matchPubKey, nil
+			if keyIDString, ok := keyIDValue.(string); ok {
+				if matchPubKey, found := v.pubKeyMap[keyIDString]; found {
+					return matchPubKey.pubKey, nil
 				}
 			} else {
 				return nil, fmt.Errorf("kid (key id) in jwt header is not a string : %v", keyIDValue)
 			}
-			return nil, &MatchingCertNotFoundError{keyIDString}
+			return nil, &MatchingCertNotFoundError{keyIDValue.(string)}
 		}
 
 		// at this point, there is no kid in the header. This means that we should only have one public key
 		// if we have more than one public key, we have a problem since we do not know which one to use to verify.
 		if len(v.pubKeyMap) == 1 {
 			for key, _ := range v.pubKeyMap {
-				return v.pubKeyMap[key], nil
+				return v.pubKeyMap[key].pubKey, nil
 			}
 		}
 
@@ -261,7 +285,6 @@ func (v *verifierPrivate) ValidateTokenAndGetClaims(tokenString string, customCl
 	if claimBytes, err = jwt.DecodeSegment(parts[1]); err != nil {
 		return nil, fmt.Errorf("could not decode claims part of the jwt token")
 	}
-	fmt.Printf("Claim bytes %s\n", claimBytes)
 	dec := json.NewDecoder(bytes.NewBuffer(claimBytes))
 	err = dec.Decode(customClaims)
 	token.customClaims = customClaims
@@ -269,7 +292,7 @@ func (v *verifierPrivate) ValidateTokenAndGetClaims(tokenString string, customCl
 	return &token, nil
 }
 
-func NewVerifier(signingCertPems interface{}, rootCAPems [][]byte) (Verifier, error) {
+func NewVerifier(signingCertPems interface{}, rootCAPems [][]byte, cacheTime time.Duration) (Verifier, error) {
 
 	var certPemSlice [][]byte
 
@@ -291,8 +314,9 @@ func NewVerifier(signingCertPems interface{}, rootCAPems [][]byte) (Verifier, er
 	verifyRootCAOpts := x509.VerifyOptions{
 		Roots: roots,
 	}
+	v := verifierPrivate{expiration: time.Now().Add(cacheTime)}
 
-	pubKeyMap := make(map[string]crypto.PublicKey)
+	v.pubKeyMap = make(map[string]verifierKey)
 	for _, certPem := range certPemSlice {
 		// TODO - we should validate the certificate here as well
 		// we might just want to take the certificate from the pem here itself
@@ -301,17 +325,18 @@ func NewVerifier(signingCertPems interface{}, rootCAPems [][]byte) (Verifier, er
 		var cert *x509.Certificate
 		var err error
 		cert, verifyRootCAOpts.Intermediates, err = crypt.GetCertAndChainFromPem(certPem)
-		if err != nil {
+		if err != nil || time.Now().After(cert.NotAfter) { // expired certificate
 			continue
 		}
 
 		// if certificate is not self signed, then we have to validate the cert
 		// this implies that we are allowing self signed certificate.
 		if !(cert.IsCA && cert.BasicConstraintsValid) {
-			if _, err := cert.Verify(verifyRootCAOpts); err != nil {
+			if _, err := cert.Verify(verifyRootCAOpts); err != nil  {
 				continue
 			}
 		}
+
 		certHash, err := crypt.GetCertHashInHex(cert, crypto.SHA1)
 		if err != nil {
 			continue
@@ -320,21 +345,23 @@ func NewVerifier(signingCertPems interface{}, rootCAPems [][]byte) (Verifier, er
 		if err != nil {
 			continue
 		}
-		pubKeyMap[certHash] = pubKey
+
+		v.pubKeyMap[certHash] = verifierKey{pubKey: pubKey, expTime: cert.NotAfter}
+		// update the validity of the object if the certificate expires before the current validity
+		// TODO: set the expiration when based on CRL when it become available
+		if v.expiration.After(cert.NotAfter){
+			v.expiration = cert.NotAfter
+		}
 	}
 
-	verifier := verifierPrivate{}
-	switch length := len(pubKeyMap); {
+	switch length := len(v.pubKeyMap); {
 	case length == 0:
-		return nil, fmt.Errorf("Could not parse/validate any of the jwt signing certificates ")
+		return nil, &NoValidCertFoundError{}
 
 	case length > 50:
 		return nil, fmt.Errorf("too many jwt signing certificates. Possibly an incorrect directory passed in - unable to continue ")
-
-	case length >= 1:
-		verifier.pubKeyMap = pubKeyMap
 	}
 
-	return &verifier, nil
+	return &v, nil
 
 }
