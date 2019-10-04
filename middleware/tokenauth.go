@@ -21,29 +21,14 @@ import (
 var jwtVerifier jwtauth.Verifier
 var jwtCertDownloadAttempted bool
 
-func initJwtVerifier(signingCertsDir, trustedCAsDir string, fnGetJwtCerts RetriveJwtCertFn, cacheTime time.Duration) (err error){
+func initJwtVerifier(signingCertsDir, trustedCAsDir string, cacheTime time.Duration) (error){
 	
 	certPems, err := cos.GetDirFileContents(signingCertsDir, "*.pem" )
-	if err != nil {
-		return err
-	}
 
 	rootPems, err := cos.GetDirFileContents(trustedCAsDir, "*.pem" )
-	// rootCAs can be empty - so we do not have to check for error. 
 	
-	// try to initialize with the current list of certificates and if it fails
-	// retry the operation after calling the function to obtain certificates
-	for  retryNeeded, looped := false, false; retryNeeded || !looped;  looped = true{
-		jwtVerifier, err = jwtauth.NewVerifier(certPems, rootPems, cacheTime)
-		// try to download certificates using given function and then retry
-		retryNeeded = false
-		if err != nil &&  fnGetJwtCerts != nil && !looped{
-			if _, ok := err.(*jwtauth.NoValidCertFoundError); ok {
-				fnGetJwtCerts()
-				retryNeeded = true
-			}
-		}
-	}
+	jwtVerifier, err = jwtauth.NewVerifier(certPems, rootPems, cacheTime)
+
 	return err
 
 }
@@ -88,7 +73,7 @@ func NewTokenAuth(signingCertsDir, trustedCAsDir string, fnGetJwtCerts RetriveJw
 		for needInit, retryNeeded, looped := jwtVerifier == nil, false, false; retryNeeded || !looped;  looped = true{
 
 			if needInit || retryNeeded {
-				if initErr := initJwtVerifier(signingCertsDir, trustedCAsDir, fnGetJwtCerts, cacheTime); initErr != nil {
+				if initErr := initJwtVerifier(signingCertsDir, trustedCAsDir, cacheTime); initErr != nil {
 					log.WithError(initErr).Error("attempt to initialize jwt verifier failed")
 					w.WriteHeader(http.StatusInternalServerError)
 					return
@@ -99,7 +84,10 @@ func NewTokenAuth(signingCertsDir, trustedCAsDir string, fnGetJwtCerts RetriveJw
 			_, err = jwtVerifier.ValidateTokenAndGetClaims(strings.TrimSpace(splitAuthHeader[1]), &claims)
 			if err != nil && !looped {
 				switch err.(type){
-				case *jwtauth.VerifierExpiredError, *jwtauth.MatchingCertNotFoundError:
+				case *jwtauth.MatchingCertNotFoundError, *jwtauth.MatchingCertJustExpired:
+					fnGetJwtCerts()
+					retryNeeded = true
+				case *jwtauth.VerifierExpiredError:
 					retryNeeded = true
 				}
 
