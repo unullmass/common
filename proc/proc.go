@@ -19,10 +19,11 @@ var QuitChan chan bool
 var wg *sync.WaitGroup
 var err error
 var mux sync.Mutex
+var Allow_Task bool
 
 var ErrWaitTimeout = errors.New("Timed out waiting for tasks to complete")
 
-func init(){
+func init() {
 	stop = make(chan os.Signal)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 
@@ -30,18 +31,24 @@ func init(){
 	wg = &sync.WaitGroup{}
 }
 
-
-func AddTask() <-chan bool{
-	wg.Add (1)
+func AddTask() <-chan bool {
+	wg.Add(1)
 	return QuitChan
 }
 
+func AddTaskWithoutPendingTermination() (<-chan bool, error) {
+	if Allow_Task == false {
+		return QuitChan, errors.New("Could not add task to task list, either the process is in pending termination or terminated")
+	}
+	wg.Add(1)
+	return QuitChan, nil
+}
 
-func TaskDone(){
+func TaskDone() {
 	wg.Done()
 }
 
-func WaitForQuitAndCleanup(timeout time.Duration) error{
+func WaitForQuitAndCleanup(timeout time.Duration) error {
 	WaitForQuitAndSignalTasks()
 	return WaitFinalCleanup(timeout)
 }
@@ -55,36 +62,34 @@ func WaitForQuitAndSignalTasks() {
 	close(QuitChan)
 }
 
-func WaitFinalCleanup(timeout time.Duration) (error){
-	// wait for all the processes that added themselves to 
-    c := make(chan struct{})
-    go func() {
-        defer close(c)
-        wg.Wait()
+func WaitFinalCleanup(timeout time.Duration) error {
+	// wait for all the processes that added themselves to
+	c := make(chan struct{})
+	go func() {
+		defer close(c)
+		wg.Wait()
 	}()
-	
+
 	var success bool
-    select {
-    case <-c:
-        success = true // completed normally
-    case <-time.After(timeout*time.Second):
-        success = false
+	select {
+	case <-c:
+		success = true // completed normally
+	case <-time.After(timeout * time.Second):
+		success = false
 	}
-	
+
 	if err != nil && success == false {
 		return ErrWaitTimeout
 	}
 	return err
 }
 
-func SetError(e error){
+func SetError(e error) {
 	mux.Lock()
-	err = e 
+	err = e
 	mux.Unlock()
 }
 
-func EndProcess(){
+func EndProcess() {
 	stop <- syscall.SIGTERM
 }
-
-
