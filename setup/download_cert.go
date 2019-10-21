@@ -41,10 +41,13 @@
 
  func GetCertificateFromCMS(certType string, keyAlg string, keyLen int, cmsBaseUrl string, subject pkix.Name, hosts string, caCertsDir string, bearerToken string) (key []byte, cert []byte, err error) {
 	 //TODO: use CertType for TLS or Signing cert
-	csrData, key, err := crypt.CreateKeyPairAndCertificateRequest(subject, hosts, keyAlg, keyLen)
-	if err != nil {
+   csrData, key, err := crypt.CreateKeyPairAndCertificateRequest(subject, hosts, keyAlg, keyLen)
+   if err != nil {
 	   return nil, nil, fmt.Errorf("Certificate setup: %v", err)
-	}
+   }
+   if !strings.HasSuffix(cmsBaseUrl, "/") {
+                cmsBaseUrl = cmsBaseUrl + "/"
+   }
 
    url, err := url.Parse(cmsBaseUrl)
    if err != nil {

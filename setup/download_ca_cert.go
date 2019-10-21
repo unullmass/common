@@ -10,6 +10,7 @@ import (
         "io"
         "os"
         "errors"
+	"strings"
         "io/ioutil"
         "net/http"
         "net/url"
@@ -24,7 +25,12 @@ type Download_Ca_Cert struct {
 	ConsoleWriter   io.Writer
 }
 
+
 func DownloadRootCaCertificate(cmsBaseUrl string, dirPath string) (err error) {
+	if !strings.HasSuffix(cmsBaseUrl, "/") {
+                cmsBaseUrl = cmsBaseUrl + "/"
+        }
+
         url, err := url.Parse(cmsBaseUrl)
         if err != nil {
                 fmt.Println("Configured CMS URL is malformed: ", err)
