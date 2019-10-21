@@ -5,6 +5,7 @@
 package validation
 
 import (
+	"encoding/xml"
 	"errors"
 	"net/url"
 	"os"
@@ -144,10 +145,7 @@ func ValidateBase64String(value string) error {
 
 // ValidateXMLString method checks if a string has a valid base64 format
 func ValidateXMLString(value string) error {
-	if !xmlStringReg.MatchString(value) {
-		return errors.New("Invalid XML format")
-	}
-	return nil
+	return xml.Unmarshal([]byte(value), new(interface{}))
 }
 
 // ValidateHexString method checks if a string has a valid hex format
