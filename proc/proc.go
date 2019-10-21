@@ -20,6 +20,7 @@ var wg *sync.WaitGroup
 var err error
 var mux sync.Mutex
 var Allow_Task bool
+var PendingSignalRecieved bool
 
 var ErrWaitTimeout = errors.New("Timed out waiting for tasks to complete")
 
@@ -31,18 +32,23 @@ func init() {
 	wg = &sync.WaitGroup{}
 }
 
-func AddTask() <-chan bool {
+func AddTask(force_wait bool) (<-chan bool, error) {
+
+	if PendingSignalRecieved == true && force_wait == false {
+		return QuitChan, errors.New("Cannot add task, Pending terminating signal recieved")
+	}
 	wg.Add(1)
-	return QuitChan
+	return QuitChan, nil
 }
 
+/*
 func AddTaskWithoutPendingTermination() (<-chan bool, error) {
 	if Allow_Task == false {
 		return QuitChan, errors.New("Could not add task to task list, either the process is in pending termination or terminated")
 	}
 	wg.Add(1)
 	return QuitChan, nil
-}
+}*/
 
 func TaskDone() {
 	wg.Done()
@@ -57,6 +63,7 @@ func WaitForQuitAndSignalTasks() {
 	// wait for the stop signal for the process
 	<-stop
 	log.Println("Received quit. Sending shutdown and waiting on goroutines...")
+	PendingSignalRecieved = true
 	// send stop to the shutdown channel. All the routines waiting on the terminate signal
 	// will receive when we close the channel
 	close(QuitChan)
