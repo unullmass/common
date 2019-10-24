@@ -6,14 +6,15 @@ package proc
 
 import (
 	"errors"
-	"log"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
 	"time"
+	cLog "intel/isecl/lib/common/log"
 )
 
+var log = cLog.GetDefaultLogger()
 var stop chan os.Signal
 var QuitChan chan bool
 var wg *sync.WaitGroup
@@ -35,20 +36,12 @@ func init() {
 func AddTask(force_wait bool) (<-chan bool, error) {
 
 	if PendingSignalRecieved == true && force_wait == false {
-		return QuitChan, errors.New("Cannot add task, Pending terminating signal recieved")
+		return QuitChan, errors.New("common/proc/proc:AddTask() Cannot add task, Pending terminating signal recieved")
 	}
 	wg.Add(1)
 	return QuitChan, nil
 }
 
-/*
-func AddTaskWithoutPendingTermination() (<-chan bool, error) {
-	if Allow_Task == false {
-		return QuitChan, errors.New("Could not add task to task list, either the process is in pending termination or terminated")
-	}
-	wg.Add(1)
-	return QuitChan, nil
-}*/
 
 func TaskDone() {
 	wg.Done()
@@ -62,7 +55,7 @@ func WaitForQuitAndCleanup(timeout time.Duration) error {
 func WaitForQuitAndSignalTasks() {
 	// wait for the stop signal for the process
 	<-stop
-	log.Println("Received quit. Sending shutdown and waiting on goroutines...")
+	log.Info("common/proc/proc:AddTask() Received quit. Sending shutdown and waiting on goroutines...")
 	PendingSignalRecieved = true
 	// send stop to the shutdown channel. All the routines waiting on the terminate signal
 	// will receive when we close the channel
@@ -81,8 +74,10 @@ func WaitFinalCleanup(timeout time.Duration) error {
 	select {
 	case <-c:
 		success = true // completed normally
-	case <-time.After(timeout * time.Second):
+		log.Info("common/proc/proc:WaitFinalCleanup() Completed normally")
+	case <-time.After(timeout):
 		success = false
+		log.Info("common/proc/proc:WaitFinalCleanup() timeout exceeded, terminating...")
 	}
 
 	if err != nil && success == false {
