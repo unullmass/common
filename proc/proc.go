@@ -21,7 +21,7 @@ var wg *sync.WaitGroup
 var err error
 var mux sync.Mutex
 var Allow_Task bool
-var PendingSignalRecieved bool
+var pendingSignalRecieved bool
 
 var ErrWaitTimeout = errors.New("Timed out waiting for tasks to complete")
 
@@ -35,7 +35,7 @@ func init() {
 
 func AddTask(force_wait bool) (<-chan bool, error) {
 
-	if PendingSignalRecieved == true && force_wait == false {
+	if pendingSignalRecieved == true && force_wait == false {
 		return QuitChan, errors.New("common/proc/proc:AddTask() Cannot add task, Pending terminating signal recieved")
 	}
 	wg.Add(1)
@@ -55,8 +55,8 @@ func WaitForQuitAndCleanup(timeout time.Duration) error {
 func WaitForQuitAndSignalTasks() {
 	// wait for the stop signal for the process
 	<-stop
-	log.Info("common/proc/proc:AddTask() Received quit. Sending shutdown and waiting on goroutines...")
-	PendingSignalRecieved = true
+	log.Debug("common/proc/proc:WaitForQuitAndSignalTasks() Received quit. Sending shutdown and waiting on goroutines...")
+	pendingSignalRecieved = true
 	// send stop to the shutdown channel. All the routines waiting on the terminate signal
 	// will receive when we close the channel
 	close(QuitChan)
@@ -74,10 +74,10 @@ func WaitFinalCleanup(timeout time.Duration) error {
 	select {
 	case <-c:
 		success = true // completed normally
-		log.Info("common/proc/proc:WaitFinalCleanup() Completed normally")
+		log.Debug("common/proc/proc:WaitFinalCleanup() Completed normally")
 	case <-time.After(timeout):
 		success = false
-		log.Info("common/proc/proc:WaitFinalCleanup() timeout exceeded, terminating...")
+		log.Debug("common/proc/proc:WaitFinalCleanup() timeout exceeded, terminating...")
 	}
 
 	if err != nil && success == false {
