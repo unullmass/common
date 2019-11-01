@@ -5,16 +5,22 @@
 package aas
 
 type RoleInfo struct {
-	Service string `json:"service,omitempty"`
+	Service string `json:"service"`
 	// Name: UpdateHost
 	Name string `json:"name" gorm:"not null"`
 	// 1234-88769876-28768
 	Context string `json:"context,omitempty"`
 }
 
+type PermissionInfo struct {
+	Service string   `json:"service"`
+	Context string   `json:"context,omitempty"`
+	Rules   []string `json:"rules"`
+}
+
 type RoleCreate struct {
-	Name    string `json:"name"`
-	Service string `json:"service"`
+	RoleInfo             // embed
+	Permissions []string `json:"permissions,omitempty"`
 }
 
 type RoleCreateResponse struct {
@@ -49,4 +55,9 @@ type UserRoleCreate struct {
 type UserCred struct {
 	UserName string `json:"username"`
 	Password string `json:"password"`
+}
+
+type AuthClaims struct {
+	Roles       []RoleInfo       `json:"roles"`
+	Permissions []PermissionInfo `json:"permissions,omitempty",`
 }

@@ -59,7 +59,7 @@ func NewTokenAuth(signingCertsDir, trustedCAsDir string, fnGetJwtCerts RetriveJw
 		}
 	
 		// the second item in the slice should be the jwtToken. let try to validate
-		claims := ct.RoleSlice{}
+		claims := ct.AuthClaims{}
 		var err error
 
 		// There are two scenarios when we retry the ValidateTokenAndClaims.
@@ -103,6 +103,7 @@ func NewTokenAuth(signingCertsDir, trustedCAsDir string, fnGetJwtCerts RetriveJw
 		}
 
 		r = context.SetUserRoles(r, claims.Roles)
+		r = context.SetUserPermissions(r, claims.Permissions)
 		next.ServeHTTP(w, r)
 		})
 	}
