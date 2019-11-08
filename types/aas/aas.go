@@ -57,6 +57,13 @@ type UserCred struct {
 	Password string `json:"password"`
 }
 
+type PasswordChange struct {
+	UserName string `json:"username"`
+	OldPassword string `json:"old_password"`
+	NewPassword string `json:"new_password"`
+	PasswordConfirm string `json:"password_confirm"`
+}
+
 type AuthClaims struct {
 	Roles       []RoleInfo       `json:"roles"`
 	Permissions []PermissionInfo `json:"permissions,omitempty",`

@@ -197,7 +197,6 @@ func (c claims) MarshalJSON() ([]byte, error) {
 	}
 	slice1[len(slice1)-1] = ','
 	slice2[0] = ' '
-	fmt.Printf("Claims Json: %s", append(slice1, slice2...))
 	return append(slice1, slice2...), nil
 }
 
