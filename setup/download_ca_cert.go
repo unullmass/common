@@ -5,28 +5,32 @@
 package setup
 
 import (
-        "fmt"
-        "flag"
-        "io"
-        "os"
-        "errors"
+	"crypto"
+	"crypto/tls"
+	"encoding/pem"
+	"errors"
+	errorLog "github.com/pkg/errors"
+	"flag"
+	"fmt"
+	"intel/isecl/lib/common/crypt"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"os"
 	"strings"
-        "io/ioutil"
-        "net/http"
-        "net/url"
-        "crypto/tls"
-        "intel/isecl/lib/common/crypt"
 )
 
 type Download_Ca_Cert struct {
-        Flags           []string
-        CmsBaseURL      string
-        CaCertDirPath   string
-	ConsoleWriter   io.Writer
+	Flags                []string
+	CmsBaseURL           string
+	CaCertDirPath        string
+	TrustedTlsCertDigest string
+	ConsoleWriter        io.Writer
 }
 
 
-func DownloadRootCaCertificate(cmsBaseUrl string, dirPath string) (err error) {
+func DownloadRootCaCertificate(cmsBaseUrl string, dirPath string, trustedTlsCertDigest string) (err error) {
 	if !strings.HasSuffix(cmsBaseUrl, "/") {
                 cmsBaseUrl = cmsBaseUrl + "/"
         }
@@ -57,13 +61,24 @@ func DownloadRootCaCertificate(cmsBaseUrl string, dirPath string) (err error) {
                 return fmt.Errorf("CA certificate setup: %v", err)
         }
         defer resp.Body.Close()
+	// PEM encode the certificate (this is a standard TLS encoding)
+	pemBlock := pem.Block{Type: "CERTIFICATE", Bytes: resp.TLS.PeerCertificates[0].Raw}
+	certPEM := pem.EncodeToMemory(&pemBlock)
+	tlsCertDigest, err := crypt.GetCertHashFromPemInHex(certPEM, crypto.SHA384)
+	if err != nil {
+		return errorLog.Wrap(err, "setup/download_ca_cert:DownloadRootCaCertificate() CA certificate setup error")
+	}
         if resp.StatusCode != http.StatusOK {
                 text, _ := ioutil.ReadAll(resp.Body)
                 errStr := fmt.Sprintf("CMS request failed to download CA certificate (HTTP Status Code: %d)\nMessage: %s", resp.StatusCode, string(text))
                 fmt.Println(errStr)
                 return fmt.Errorf("CA certificate setup: %v", err)
         }
-        tlsResp, err := ioutil.ReadAll(resp.Body)
+	if tlsCertDigest == "" || tlsCertDigest != trustedTlsCertDigest {
+		errStr := "CMS TLS Certificate is not trusted"
+		return errorLog.Wrap(errors.New(errStr),"setup/download_ca_cert:DownloadRootCaCertificate() CA certificate setup error")
+	}
+	tlsResp, err := ioutil.ReadAll(resp.Body)
         if err != nil {
                 fmt.Println("Failed to read CMS response body")
                 return fmt.Errorf("CA certificate setup: %v", err)
@@ -103,7 +118,7 @@ func (cc Download_Ca_Cert) Run(c Context) error {
         }
 
         if *force || cc.Validate(c) != nil {
-                err = DownloadRootCaCertificate(cmsBaseUrl, cc.CaCertDirPath)
+                err = DownloadRootCaCertificate(cmsBaseUrl, cc.CaCertDirPath, cc.TrustedTlsCertDigest)
                 if err != nil {
                         fmt.Println("Failed to Download CA Certificate")
                         return err
