@@ -162,7 +162,7 @@ func NewTokenFactory(pkcs8der []byte, includeKeyIdInToken bool, signingCertPem [
 	//todo - we need to decide if we should use the information in the cert
 	if includeKeyIdInToken && len(signingCertPem) > 0 {
 		block, _ := pem.Decode(signingCertPem)
-		if block == nil {
+		if block == nil || block.Type != "CERTIFICATE" {
 			return nil, fmt.Errorf("NewTokenFactory: failed to parse signing certificate PEM")
 		}
 		cert, err := x509.ParseCertificate(block.Bytes)

@@ -209,7 +209,7 @@ func GetPublicKeyFromCertPem(certPem []byte) (crypto.PublicKey, error) {
 
 func GetCertFromPem(certPem []byte) (*x509.Certificate, error) {
 	block, _ := pem.Decode(certPem)
-	if block == nil {
+	if block == nil || block.Type != "CERTIFICATE"  {
 		return nil, fmt.Errorf("failed to parse certificate PEM")
 	}
 	cert, err := x509.ParseCertificate(block.Bytes)
@@ -222,8 +222,7 @@ func GetCertFromPem(certPem []byte) (*x509.Certificate, error) {
 func GetCertAndChainFromPem(certPem []byte) (cert *x509.Certificate, chain *x509.CertPool, err error) {
 
 	block, rest := pem.Decode(certPem)
-	//block, _ := pem.Decode(certPem)
-	if block == nil {
+	if block == nil  || block.Type != "CERTIFICATE"{
 		return nil, nil, fmt.Errorf("failed to parse certificate PEM")
 	}
 
@@ -290,7 +289,7 @@ func GetPKCS8PrivKeyDerFromFile(path string) ([]byte, error) {
 	}
 
 	block, _ := pem.Decode(privKeyPem)
-	if block == nil {
+	if block == nil || block.Type != "PKCS8 PRIVATE KEY" {
 		return nil, fmt.Errorf("failed to parse private Key PEM file")
 	}
 
@@ -345,7 +344,7 @@ func SavePemCertWithShortSha1FileName(certPem []byte, dir string) error {
 	// is no junk data.. specially if it is a certificate chain.. also, we want to standardize
 	// the header
 
-	for block, rest := pem.Decode(certPem); block != nil; block, rest = pem.Decode(rest) {
+	for block, rest := pem.Decode(certPem); block != nil && block.Type == "CERTIFICATE"; block, rest = pem.Decode(rest) {
 		pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: block.Bytes}); 
 	}
 
