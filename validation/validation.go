@@ -15,6 +15,7 @@ import (
 var (
 	unameReg         = regexp.MustCompile(`^[A-Za-z]{1}[A-Za-z0-9_]{1,31}$`)
 	userorEmailReg   = regexp.MustCompile("^[a-zA-Z0-9.-_]+@?[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+	emailReg         = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 	hostnameReg      = regexp.MustCompile("^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]{0,61}[A-Za-z0-9])$")
 	ipReg            = regexp.MustCompile("^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$")
 	idfReg           = regexp.MustCompile(`^[a-zA-Z_]{1}[a-zA-Z0-9_]{1,127}$`)
@@ -87,6 +88,15 @@ func ValidateUserNameString(uname string) error {
 		return nil
 	}
 	return errors.New("Invalid input for username")
+}
+
+// ValidateEmailString validates if user has provided valid email address
+func ValidateEmailString(email string) error {
+
+	if len(email) < 256 && emailReg.MatchString(email) {
+		return nil
+	}
+	return errors.New("Invalid input for email")
 }
 
 // ValidatePasswordString validate password. For not we are only checking if this is empty
