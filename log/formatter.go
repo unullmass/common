@@ -19,6 +19,7 @@ type LogFormatter struct {
 	LineFormat      string
 	TimeFormat      string
 	LevelLength     int
+	MaxLength       int
 
 	setup sync.Once
 }
@@ -39,6 +40,12 @@ func (f *LogFormatter) setupArgs() {
 	}
 	if f.LevelLength < 4 {
 		f.LevelLength = 4
+	}
+	if f.MaxLength < 1 {
+		f.MaxLength = 99999
+	}
+	if f.MaxLength < 100 {
+		f.MaxLength = 100
 	}
 }
 
@@ -83,6 +90,13 @@ func (f *LogFormatter) Format(e *log.Entry) ([]byte, error) {
 			}
 			ret += fields
 		}
+		if len(ret) > f.MaxLength {
+			break
+		}
 	}
-	return []byte(ret + tokens[12]), nil
+	ret += tokens[12]
+	if len(ret) > f.MaxLength {
+		ret = ret[0:f.MaxLength] + "\n"
+	}
+	return []byte(ret), nil
 }
