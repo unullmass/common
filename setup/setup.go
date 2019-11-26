@@ -6,6 +6,7 @@ package setup
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"os"
 	"reflect"
 	"strconv"
@@ -45,12 +46,12 @@ type EnvVars struct {
 
 // RunTasks executes the specified set of Tasks against the registered list of tasks. Any tasks registered that arent in the list provided are skipped.
 func (r *Runner) RunTasks(tasks ...string) error {
-	fmt.Println("Running setup ...")
 	ctx := Context{
 		askInput: r.AskInput,
 	}
 	if len(tasks) == 0 {
 		// run ALL the setup tasks
+                fmt.Println("Running setup ...")
 		for _, t := range r.Tasks {
 			if err := t.Run(ctx); err != nil {
 				return err
@@ -59,6 +60,7 @@ func (r *Runner) RunTasks(tasks ...string) error {
 				return err
 			}
 		}
+                fmt.Println("Setup finished successfully!")
 	} else {
 		// map each task ...string into a map[string]bool
 		enabledTasks := make(map[string]bool)
@@ -70,15 +72,17 @@ func (r *Runner) RunTasks(tasks ...string) error {
 			taskName := strings.ToLower(reflect.TypeOf(t).Name())
 			if _, ok := enabledTasks[taskName]; ok {
 				if err := t.Run(ctx); err != nil {
-					return err
+					fmt.Fprintln(os.Stderr,"Error while running setup task:",taskName)
+					return errors.Wrapf(err, "setup/setup.go:RunTasks() Error while running setup task %s", taskName)
 				}
 				if err := t.Validate(ctx); err != nil {
-					return err
+					fmt.Fprintln(os.Stderr,"Error while validating setup task:",taskName)
+					return errors.Wrapf(err, "setup/setup.go:RunTasks() Error while validating setup task %s", taskName)
 				}
+				fmt.Fprintln(os.Stdout,"Setup task finished successfully:",taskName)
 			}
 		}
 	}
-	fmt.Println("Setup finished successfully!")
 	return nil
 }
 
