@@ -8,6 +8,8 @@ func GetLogger(name string) *log.Entry
 
 func GetDefaultLogger() *log.Entry
 func GetSecurityLogger() *log.Entry
+
+func GetFuncName() string
 ```
 
 - `logrus` wrapper for common codes
@@ -26,10 +28,9 @@ func SetLogger(name string, lv log.Level, fmt log.Formatter, out io.Writer, rc b
 - `logrus` wrapper for application and testing codes
 - This package holds the map structure for all loggers
 - **Only** use it in application or test codes
-- package named `internal` cannot be import from another repository
 
 
-### In packages
+### Log in packages
 
 - Get its own `logrus.Entry` instance with a call to `lib/common/log.AddLoggerByPackageName`
 - The returned `logrus.Entry` logs the package name with every message
@@ -63,10 +64,11 @@ func DoSomething() {
 }
 ```
 
-#### Unit test code
+### Unit test code
 - Use specified logger name for unit tests
 - Redirect output to some buffer for auto checking
 - Allows multiple tests logging at the same time
+- `testing.T` has its own logger, also a good option
 
 ```go
 package example_test
@@ -96,7 +98,7 @@ func TestDoSomething(t *testing.T) {
 }
 ```
 
-### Inspecting Common Log in Tests
+### Inspecting Log outputs in Tests
 - Alter package global logger handle in test code
 - In this case, test code should reside in a same package
 
@@ -107,7 +109,7 @@ package example
 
 import (
     "testing"
-    commLogInt "lib/common/log/setup"
+    commLogSetup "lib/common/log/setup"
 )
 
 var b1 bytes.Buffer
@@ -115,11 +117,11 @@ var b2 bytes.Buffer
 
 func doFirst() {
     // change package global handle of these loggers
-    log = commLogInt.GetLogger("example_test_default")
-    slog = commLogInt.GetLogger("example_test_security")
+    log = commLogSetup.GetLogger("example_test_default")
+    slog = commLogSetup.GetLogger("example_test_security")
 
-    commLogInt.SetLogger("example_test_default", log.Trace, nil, io.Writer(&b1), false)
-    commLogInt.SetLogger("example_test_security", log.Trace, nil, io.Writer(&b2), false)
+    commLogSetup.SetLogger("example_test_default", log.Trace, nil, io.Writer(&b1), false)
+    commLogSetup.SetLogger("example_test_security", log.Trace, nil, io.Writer(&b2), false)
 }
 ```
 
@@ -133,14 +135,12 @@ import (
     "github.com/sirupsen/logrus"
 
     commLog "lib/common/log"
-    commLogInt "lib/common/log/setup"
+    commLogSetup "lib/common/log/setup"
 )
 
-func SetupLog() {
-    secLogFile := os.OpenFile(consts.SecurityLogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0755)
-
-    commLogInt.SetLogger(commLog.DefaultLoggerName, a.config().LogLevel, nil, os.Stdout, false)
-    commLogInt.SetLogger(commLog.SecurityLoggerName, a.config().LogLevel, nil, secLogFile, false)
+func (a *App) SetupLog() {
+    commLogSetup.SetLogger(commLog.DefaultLoggerName, a.config().LogLevel, nil, os.Stdout, false)
+    commLogSetup.SetLogger(commLog.SecurityLoggerName, a.config().LogLevel, nil, a.securityLogWriter(), false)
 }
 ```
 
@@ -155,6 +155,7 @@ type IsecLFormatter struct {
 	LineFormat      string
 	TimeFormat      string
 	LevelLength     int
+	MaxLength       int
 }
 ```
 
@@ -162,6 +163,11 @@ type IsecLFormatter struct {
 - How many alphabets are used to print level
 - Should be 4 to 7 alphabets
 - Truncate or padding space on right most part
+
+### MaxLength
+- The max length of a line of log entry
+- Cannot be less than 100 characters
+- If value not valid, the limit will be set to `99,999`
 
 ### Format
 - `FormatDelimiter`
@@ -190,6 +196,8 @@ type IsecLFormatter struct {
             ERRO[10872] 2019-10-14T16:57:22-07:00: Hello;
             ```
         - Bad: `"[$lv$] t $pkg$: msg; $flds$"`, this will lead to an error and fall back to default format
-- `TimeFormat`
-    - Default is `time.RFC3339`
-    - https://golang.org/pkg/time/#Time.Format
+
+
+## `lib/common/log/message`
+This package holds all required security log messages, reference
+https://gitlab.devtools.intel.com/sst/dev-tools/blob/coding-guidelines/coding-guidelines/logging-requirement.md for details
