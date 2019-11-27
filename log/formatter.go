@@ -44,8 +44,8 @@ func (f *LogFormatter) setupArgs() {
 	if f.MaxLength < 1 {
 		f.MaxLength = 99999
 	}
-	if f.MaxLength < 100 {
-		f.MaxLength = 100
+	if f.MaxLength < 300 {
+		f.MaxLength = 300
 	}
 }
 
