@@ -51,16 +51,19 @@ func (r *Runner) RunTasks(tasks ...string) error {
 	}
 	if len(tasks) == 0 {
 		// run ALL the setup tasks
-                fmt.Println("Running setup ...")
+		fmt.Println("Running setup ...")
 		for _, t := range r.Tasks {
+			taskName := strings.ToLower(reflect.TypeOf(t).Name())
 			if err := t.Run(ctx); err != nil {
-				return err
+				fmt.Fprintln(os.Stderr,"Error while running setup task:",taskName)
+				return errors.Wrapf(err, "setup/setup.go:RunTasks() Error while running setup task %s", taskName)
 			}
 			if err := t.Validate(ctx); err != nil {
-				return err
+				fmt.Fprintln(os.Stderr,"Error while validating setup task:",taskName)
+				return errors.Wrapf(err, "setup/setup.go:RunTasks() Error while validating setup task %s", taskName)
 			}
 		}
-                fmt.Println("Setup finished successfully!")
+		fmt.Println("Setup finished successfully!")
 	} else {
 		// map each task ...string into a map[string]bool
 		enabledTasks := make(map[string]bool)
