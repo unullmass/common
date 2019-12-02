@@ -11,10 +11,10 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-
-	log "github.com/sirupsen/logrus"
+	commLog "intel/isecl/lib/common/log"
 )
 
+var log = commLog.GetDefaultLogger()
 // Task defines a Setup Task. Run() executes the setup task, and Validate() checks whether or not the task succeeded.
 // Validate() can and should be run as the first statement of Run() so needless work isn't done again.
 type Task interface {
