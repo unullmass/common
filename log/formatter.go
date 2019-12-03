@@ -72,7 +72,9 @@ func (f *LogFormatter) Format(e *log.Entry) ([]byte, error) {
 		case "msg":
 			ret += e.Message
 		case "pid":
-			ret += fmt.Sprintf("%05d", e.Data["pid"].(int))
+			if pid, ok := e.Data["pid"].(int); ok {
+				ret += fmt.Sprintf("%05d", pid)
+			}
 		case "flds":
 			fields := ""
 			for k, v := range e.Data {
