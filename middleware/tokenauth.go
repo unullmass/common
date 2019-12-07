@@ -13,6 +13,7 @@ import (
 
 	"intel/isecl/lib/common/context"
 	clog "intel/isecl/lib/common/log"
+	commLogMsg "intel/isecl/lib/common/log/message"
 	"strings"
 	"time"
 
@@ -59,6 +60,7 @@ func NewTokenAuth(signingCertsDir, trustedCAsDir string, fnGetJwtCerts RetriveJw
 			if len(splitAuthHeader) <= 1 {
 				log.Error("no bearer token provided for authorization")
 				w.WriteHeader(http.StatusUnauthorized)
+				slog.Warningf("%s: Invalid token, requested from %s: ", commLogMsg.AuthenticationFailed, r.RemoteAddr)
 				return
 			}
 
@@ -103,6 +105,7 @@ func NewTokenAuth(signingCertsDir, trustedCAsDir string, fnGetJwtCerts RetriveJw
 				// this is a validation failure. Let us log the message and return unauthorized
 				log.WithError(err).Error("token validation Failure")
 				w.WriteHeader(http.StatusUnauthorized)
+				slog.Warningf("%s: Invalid token, requested from %s: ", commLogMsg.AuthenticationFailed, r.RemoteAddr)
 				return
 			}
 
