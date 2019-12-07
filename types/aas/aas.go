@@ -23,10 +23,15 @@ type RoleCreate struct {
 	Permissions []string `json:"permissions,omitempty"`
 }
 
+type Permission struct {
+	ID   string `json:"permission_id,omitempty"`
+	Rule string `json:"rule"`
+}
+
 type RoleCreateResponse struct {
-	Service string `json:"service"`
-	Name    string `json:"name"`
-	ID      string `json:"role_id"`
+	ID          string       `json:"role_id"`
+	RoleCreate               //embed
+	Permissions []Permission `json:"permissions,omitempty"`
 }
 
 type RoleIDs struct {
@@ -58,9 +63,9 @@ type UserCred struct {
 }
 
 type PasswordChange struct {
-	UserName string `json:"username"`
-	OldPassword string `json:"old_password"`
-	NewPassword string `json:"new_password"`
+	UserName        string `json:"username"`
+	OldPassword     string `json:"old_password"`
+	NewPassword     string `json:"new_password"`
 	PasswordConfirm string `json:"password_confirm"`
 }
 
