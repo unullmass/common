@@ -144,22 +144,6 @@
 			return errors.New("Certificate setup: Common name not found in environment/config.yml for Download Certificate")
 		}
 
-	 	if tc.Subject.Organization[0] == "" {
-			return errors.New("Certificate setup: Organization name not found in environment/config.yml for Download Certificate")
-	 	}
-
-	 	if tc.Subject.Country[0] == "" {
-			return errors.New("Certificate setup: Country name not found in environment/config.yml for Download Certificate")
-	 	}
-
-	 	if tc.Subject.Province[0] == "" {
-			return errors.New("Certificate setup: Province name not found in environment/config.yml for Download Certificate")
-	 	}
-
-	 	if tc.Subject.Locality[0] == "" {
-			return errors.New("Certificate setup: Locality name not found in environment//config.yml for Download Certificate")
-	 	}
-
 		defaultHostname, err := c.GetenvString("SAN_LIST", "Comma separated list of hostnames to add to Certificate")
 		if err != nil {
 			defaultHostname = tc.SanList
