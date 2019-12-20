@@ -31,6 +31,30 @@ func (e MatchingCertNotFoundError) Error() string {
 	return fmt.Sprintf("certificate with matching public key not found. kid (key id) : %s", e.KeyId)
 }
 
+type MatchingCertJustExpired struct {
+	KeyId string
+}
+
+func (e MatchingCertJustExpired) Error() string {
+	return fmt.Sprintf("certificate with matching public key just expired. kid (key id) : %s", e.KeyId)
+}
+
+type VerifierExpiredError struct{
+	expiry time.Time
+}
+
+func (e VerifierExpiredError) Error() string {
+	return fmt.Sprintf("verifier expired at %v", e.expiry)
+}
+
+type NoValidCertFoundError struct{
+
+}
+
+func (e NoValidCertFoundError) Error() string {
+	return fmt.Sprintf("there are no valid certificates when initializing jwt verifier")
+}
+
 type JwtFactory struct {
 	privKey       crypto.PrivateKey
 	issuer        string
@@ -78,10 +102,16 @@ func (t *Token) GetHeader() *map[string]interface{} {
 	return &t.jwtToken.Header
 }
 
-type verifierPrivate struct {
-	pubKeyMap  map[string]crypto.PublicKey
-	publicName string
+type verifierKey struct{
+	pubKey crypto.PublicKey
+	expTime time.Time
 }
+
+type verifierPrivate struct {
+	expiration time.Time
+	pubKeyMap  map[string] verifierKey
+}
+
 type Verifier interface {
 	ValidateTokenAndGetClaims(tokenString string, customClaims interface{}) (*Token, error)
 }
@@ -132,7 +162,7 @@ func NewTokenFactory(pkcs8der []byte, includeKeyIdInToken bool, signingCertPem [
 	//todo - we need to decide if we should use the information in the cert
 	if includeKeyIdInToken && len(signingCertPem) > 0 {
 		block, _ := pem.Decode(signingCertPem)
-		if block == nil {
+		if block == nil || block.Type != "CERTIFICATE" {
 			return nil, fmt.Errorf("NewTokenFactory: failed to parse signing certificate PEM")
 		}
 		cert, err := x509.ParseCertificate(block.Bytes)
@@ -167,7 +197,6 @@ func (c claims) MarshalJSON() ([]byte, error) {
 	}
 	slice1[len(slice1)-1] = ','
 	slice2[0] = ' '
-	fmt.Printf("Claims Json: %s", append(slice1, slice2...))
 	return append(slice1, slice2...), nil
 }
 
@@ -200,47 +229,46 @@ func (f *JwtFactory) Create(clms interface{}, subject string, validity time.Dura
 //TODO - implement this to parse the claims
 func (v *verifierPrivate) ValidateTokenAndGetClaims(tokenString string, customClaims interface{}) (*Token, error) {
 
+	// let us check if the verifier is already expired. If it is just return verifier expired error
+	// The caller has to re-initialize the verifier.
 	token := Token{}
 	token.standardClaims = &jwt.StandardClaims{}
 	parsedToken, err := jwt.ParseWithClaims(tokenString, token.standardClaims, func(token *jwt.Token) (interface{}, error) {
 
-		//return nil, &MatchingCertNotFoundError{"keyIDValue"}
+		if keyIDValue, keyIDExists := token.Header["kid"]; keyIDExists {
 
-		// now we have more than 1 certificates. We need to use the key id to pull up the right public key
-		keyIDValue, keyIDExists := token.Header["kid"]
-		if keyIDExists {
-			var matchPubKey crypto.PublicKey
-			var matchPubKeyExists, ok bool
-			var keyIDString string
-
-			if keyIDString, ok = keyIDValue.(string); ok {
-				if matchPubKey, matchPubKeyExists = v.pubKeyMap[keyIDString]; matchPubKeyExists {
-					return matchPubKey, nil
-				}
-			} else {
+			keyIDString, ok := keyIDValue.(string)
+			if !ok {
 				return nil, fmt.Errorf("kid (key id) in jwt header is not a string : %v", keyIDValue)
 			}
-			return nil, &MatchingCertNotFoundError{keyIDString}
-		}
 
-		// at this point, there is no kid in the header. This means that we should only have one public key
-		// if we have more than one public key, we have a problem since we do not know which one to use to verify.
-		if len(v.pubKeyMap) == 1 {
-			for key, _ := range v.pubKeyMap {
-				return v.pubKeyMap[key], nil
+			if matchPubKey, found := v.pubKeyMap[keyIDString]; !found {
+				return nil, &MatchingCertNotFoundError{keyIDString}
+			} else {
+				// if the certificate just expired.. we need to return appropriate error
+				// so that the caller can deal with it appropriately
+				now := time.Now()
+				if now.After(matchPubKey.expTime){
+					return nil, &MatchingCertJustExpired{keyIDString}
+				}
+				// if the verifier expired, we need to use a new instance of the verifier
+				if time.Now().After(v.expiration){
+					return nil, &VerifierExpiredError{v.expiration}
+				}
+				return matchPubKey.pubKey, nil
 			}
+
+		} else {
+			return nil, fmt.Errorf("kid (key id) field missing in token. field is mandatory")
 		}
-
-		return nil, fmt.Errorf("public key not found in verifier or more than one certificate and there is no kid in the token - cannot select the right cert")
-
 	})
+
 	if err != nil {
 		if jwtErr, ok := err.(*jwt.ValidationError); ok {
-			if noCertErr, ok := jwtErr.Inner.(*MatchingCertNotFoundError); ok {
-				//fmt.Println(noCertErr)
-				return nil, noCertErr
+			switch e := jwtErr.Inner.(type){
+			case *MatchingCertNotFoundError, *VerifierExpiredError, *MatchingCertJustExpired:
+				return nil, e
 			}
-			//fmt.Println(noCertErr)
 			return nil, jwtErr
 		}
 		return nil, err
@@ -261,7 +289,6 @@ func (v *verifierPrivate) ValidateTokenAndGetClaims(tokenString string, customCl
 	if claimBytes, err = jwt.DecodeSegment(parts[1]); err != nil {
 		return nil, fmt.Errorf("could not decode claims part of the jwt token")
 	}
-	fmt.Printf("Claim bytes %s\n", claimBytes)
 	dec := json.NewDecoder(bytes.NewBuffer(claimBytes))
 	err = dec.Decode(customClaims)
 	token.customClaims = customClaims
@@ -269,17 +296,23 @@ func (v *verifierPrivate) ValidateTokenAndGetClaims(tokenString string, customCl
 	return &token, nil
 }
 
-func NewVerifier(signingCertPems interface{}, rootCAPems [][]byte) (Verifier, error) {
+func NewVerifier(signingCertPems interface{}, rootCAPems [][]byte, cacheTime time.Duration) (Verifier, error) {
+
+
+	v := verifierPrivate{expiration: time.Now().Add(cacheTime)}
+	v.pubKeyMap = make(map[string]verifierKey)
 
 	var certPemSlice [][]byte
 
 	switch signingCertPems.(type) {
-	default:
-		return nil, fmt.Errorf("signingCertPems has to be of type []byte or [][]byte")
+	case nil:
+		return &v, nil
 	case [][]byte:
 		certPemSlice = signingCertPems.([][]byte)
 	case []byte:
 		certPemSlice = [][]byte{signingCertPems.([]byte)}
+	default:
+		return nil, fmt.Errorf("signingCertPems has to be of type []byte or [][]byte")
 
 	}
 	// build the trust root CAs first
@@ -292,23 +325,27 @@ func NewVerifier(signingCertPems interface{}, rootCAPems [][]byte) (Verifier, er
 		Roots: roots,
 	}
 
-	pubKeyMap := make(map[string]crypto.PublicKey)
+
 	for _, certPem := range certPemSlice {
 		// TODO - we should validate the certificate here as well
 		// we might just want to take the certificate from the pem here itself
 		// then retrieve the public key, hash and also do the verification right
 		// here. Otherwise we are parsing the certificate multiple times.
-		cert, err := crypt.GetCertFromPem(certPem)
-		if err != nil {
+		var cert *x509.Certificate
+		var err error
+		cert, verifyRootCAOpts.Intermediates, err = crypt.GetCertAndChainFromPem(certPem)
+		if err != nil || time.Now().After(cert.NotAfter) { // expired certificate
 			continue
 		}
+
 		// if certificate is not self signed, then we have to validate the cert
 		// this implies that we are allowing self signed certificate.
 		if !(cert.IsCA && cert.BasicConstraintsValid) {
-			if _, err := cert.Verify(verifyRootCAOpts); err != nil {
+			if _, err := cert.Verify(verifyRootCAOpts); err != nil  {
 				continue
 			}
 		}
+
 		certHash, err := crypt.GetCertHashInHex(cert, crypto.SHA1)
 		if err != nil {
 			continue
@@ -317,21 +354,15 @@ func NewVerifier(signingCertPems interface{}, rootCAPems [][]byte) (Verifier, er
 		if err != nil {
 			continue
 		}
-		pubKeyMap[certHash] = pubKey
+
+		v.pubKeyMap[certHash] = verifierKey{pubKey: pubKey, expTime: cert.NotAfter}
+		// update the validity of the object if the certificate expires before the current validity
+		// TODO: set the expiration when based on CRL when it become available
+		if v.expiration.After(cert.NotAfter){
+			v.expiration = cert.NotAfter
+		}
 	}
-
-	verifier := verifierPrivate{}
-	switch length := len(pubKeyMap); {
-	case length == 0:
-		return nil, fmt.Errorf("Could not parse/validate any of the jwt signing certificates ")
-
-	case length > 50:
-		return nil, fmt.Errorf("too many jwt signing certificates. Possibly an incorrect directory passed in - unable to continue ")
-
-	case length >= 1:
-		verifier.pubKeyMap = pubKeyMap
-	}
-
-	return &verifier, nil
+	// we will return a valid object at this point.. it still might not contain any valid certificates
+	return &v, nil
 
 }

@@ -41,10 +41,13 @@
 
  func GetCertificateFromCMS(certType string, keyAlg string, keyLen int, cmsBaseUrl string, subject pkix.Name, hosts string, caCertsDir string, bearerToken string) (key []byte, cert []byte, err error) {
 	 //TODO: use CertType for TLS or Signing cert
-	csrData, key, err := crypt.CreateKeyPairAndCertificateRequest(subject, hosts, keyAlg, keyLen)
-	if err != nil {
+   csrData, key, err := crypt.CreateKeyPairAndCertificateRequest(subject, hosts, keyAlg, keyLen)
+   if err != nil {
 	   return nil, nil, fmt.Errorf("Certificate setup: %v", err)
-	}
+   }
+   if !strings.HasSuffix(cmsBaseUrl, "/") {
+                cmsBaseUrl = cmsBaseUrl + "/"
+   }
 
    url, err := url.Parse(cmsBaseUrl)
    if err != nil {
@@ -140,22 +143,6 @@
 		if tc.Subject.CommonName == "" {
 			return errors.New("Certificate setup: Common name not found in environment/config.yml for Download Certificate")
 		}
-
-	 	if tc.Subject.Organization[0] == "" {
-			return errors.New("Certificate setup: Organization name not found in environment/config.yml for Download Certificate")
-	 	}
-
-	 	if tc.Subject.Country[0] == "" {
-			return errors.New("Certificate setup: Country name not found in environment/config.yml for Download Certificate")
-	 	}
-
-	 	if tc.Subject.Province[0] == "" {
-			return errors.New("Certificate setup: Province name not found in environment/config.yml for Download Certificate")
-	 	}
-
-	 	if tc.Subject.Locality[0] == "" {
-			return errors.New("Certificate setup: Locality name not found in environment//config.yml for Download Certificate")
-	 	}
 
 		defaultHostname, err := c.GetenvString("SAN_LIST", "Comma separated list of hostnames to add to Certificate")
 		if err != nil {

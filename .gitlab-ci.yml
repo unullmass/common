@@ -1,0 +1,29 @@
+image: golang:1.11
+
+before_script:
+  - git config --global http.proxy "${HTTP_PROXY}"
+  - echo "[http \"https://${GITLAB_SERVER}\"]" >> ~/.gitconfig
+  - echo "        proxy = \"\"" >> ~/.gitconfig
+  - cd $CI_PROJECT_DIR
+
+variables:
+  HTTPS_PROXY: "${HTTP_PROXY}"
+  no_proxy: "${NO_PROXY}"
+  
+stages:
+  - build
+  - test
+
+test:
+  stage: test
+  tags:
+    - go
+  script:
+    - go test ./... -cover
+
+compile:
+  stage: build
+  tags:
+    - go
+  script:
+    - go build ./...

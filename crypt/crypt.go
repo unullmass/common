@@ -164,7 +164,7 @@ func GetCertHexSha384(filePath string) (string, error) {
 	}
 
 	block, _ := pem.Decode(certPEM)
-	if block == nil {
+	if block == nil || block.Type != "CERTIFICATE" {
 		return "", fmt.Errorf("failed to parse certificate PEM")
 	}
 	cert, err := x509.ParseCertificate(block.Bytes)
