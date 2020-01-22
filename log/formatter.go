@@ -12,7 +12,7 @@ import (
 
 var defaultFmt = "$lv$[$pid$] $t$ $pkg$: $msg$; $flds$"
 var defaultDelim = '$'
-var defaultTimeFmt = time.RFC3339
+var defaultTimeFmt = time.RFC3339Nano // Milliseconds not available hence update to Nano
 
 type LogFormatter struct {
 	FormatDelimiter rune
