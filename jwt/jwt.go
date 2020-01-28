@@ -21,7 +21,10 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 )
 
-const defaultTokenValidity time.Duration = 24 * time.Hour
+const (
+	defaultTokenValidity time.Duration = 24 * time.Hour
+	gracePeriodForClockSkew time.Duration = 30 * time.Second
+)
 
 type MatchingCertNotFoundError struct {
 	KeyId string
@@ -210,7 +213,8 @@ func (f *JwtFactory) Create(clms interface{}, subject string, validity time.Dura
 	now := time.Now()
 
 	jwtclaim := claims{}
-	jwtclaim.StandardClaims.IssuedAt = now.Unix()
+	// allow for a clock skew as issuing server time might be ahead of services validating the token
+	jwtclaim.StandardClaims.IssuedAt = now.Add(-1 * gracePeriodForClockSkew).Unix()
 	jwtclaim.StandardClaims.ExpiresAt = now.Add(validity).Unix()
 	jwtclaim.StandardClaims.Issuer = f.issuer
 	jwtclaim.StandardClaims.Subject = subject
