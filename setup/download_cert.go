@@ -151,7 +151,7 @@
 		host := fs.String("host_names", defaultHostname, "Comma separated list of hostnames to add to Certificate")
 
 		bearerToken := tc.BearerToken
-		tokenFromEnv, err := c.GetenvString("BEARER_TOKEN", "bearer token")
+		tokenFromEnv, err := c.GetenvSecret("BEARER_TOKEN", "bearer token")
 	    if err == nil {
 			bearerToken = tokenFromEnv
 		}
