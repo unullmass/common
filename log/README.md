@@ -199,5 +199,4 @@ type IsecLFormatter struct {
 
 
 ## `lib/common/log/message`
-This package holds all required security log messages, reference
-https://gitlab.devtools.intel.com/sst/dev-tools/blob/coding-guidelines/coding-guidelines/logging-requirement.md for details
+This package holds all required security log messages.
