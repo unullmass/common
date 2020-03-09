@@ -1,4 +1,4 @@
-module intel/isecl/lib/common
+module intel/isecl/lib/common/v2
 
 require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
